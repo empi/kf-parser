@@ -1,6 +1,0 @@
-#! NX/KF 4.0
-
-DefClass: %swd_version ();
-
-(String) version: "KITE-SWD-0.0.1 alpha";
-

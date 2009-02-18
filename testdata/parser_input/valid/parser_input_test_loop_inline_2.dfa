@@ -1,6 +1,0 @@
-#! NX/KF 4.0
-
-DefClass: parser_input_test_loop_inline_2(ug_base_part);
-
-
-(any) theList: {@{{};},};

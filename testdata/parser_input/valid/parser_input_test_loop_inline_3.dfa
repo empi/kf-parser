@@ -1,7 +1,0 @@
-#! NX/KF 4.0
-
-DefClass: parser_input_test_loop_inline_3(ug_base_part);
-
-
-(any) theList: {@{$foo << bar;};};
-(list) bbb: {@{{@{$f << ba;}};},};
