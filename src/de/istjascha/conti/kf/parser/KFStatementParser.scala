@@ -31,6 +31,10 @@ object KFStatementParser extends KFParsers {
   lexical.reserved ++= types
   lexical.reserved ++= flags
   
+  def typeName = types.map(keyword).reduceRight[Parser[String]](_ | _) // pipe em together
+  def flag = flags.map(keyword).reduceRight[Parser[String]](_ | _)
+  
+  
   def statementList : Parser[Any] =
     rep1(statement)
    
@@ -60,48 +64,61 @@ object KFStatementParser extends KFParsers {
   def methCall = ruleIdentifier ~ "(" ~ repsep(value, ",") ~ ")"
   def functionCall = name ~ "(" ~ repsep(value, ",")~ optComma ~ ")"
   
-  def loopForIn =
-    "for" ~ variable ~ "in" ~ value ~ ";"
+
   
-  def loopForIs =
-    "for" ~ variable ~ "is" ~ value ~ ";"
-  
-  def loopFromTo =
-    "for" ~ variable ~ "from" ~ numericLit ~ "to" ~ numericLit ~ ";"
-  
-  def loopForIsThen =
-    "for" ~ variable ~ "is" ~ value ~ "then"~ value~";"
-  
-  def loopInitializer =
-    loopForIn | loopFromTo | loopForIsThen
-  
-  def loopInitializers =
-     rep1( loopInitializer )
-  
-  def loopAssignments =
-    rep( loopForIs  )
+
   
   def loop =
-    "loop" ~ "{" ~ loopBody ~ "}"
-  
-  def returnIs =
-    "return" ~ "is" ~ value ~";"
-  def loopDo =
-    "do" ~ statement;
-  
-  def loopCollector =
-    collect| append | loopDo
+	{
+	  def loopBody =
+        loopInitializers ~ loopAssignments ~ loopCollectors
    
-  def loopCollectors =
-    rep1(loopCollector)
+       def loopInitializer =
+	     loopForIn | loopFromTo | loopForIsThen
+	  
+	   def loopInitializers =
+	     rep1( loopInitializer )
+        
+       def loopForIn =
+		  "for" ~ variable ~ "in" ~ value ~ ";"
+		  
+		def loopForIs =
+		  "for" ~ variable ~ "is" ~ value ~ ";"
+		  
+		 def loopFromTo =
+		   "for" ~ variable ~ "from" ~ numericLit ~ "to" ~ numericLit ~ ";"
+		  
+		 def loopForIsThen =
+		    "for" ~ variable ~ "is" ~ value ~ "then"~ value~";"
+    
+         def loopAssignments =
+              rep( loopForIs  )
+          
+         def returnIs =
+		    "return" ~ "is" ~ value ~";"
+         
+		 def loopDo =
+		    "do" ~ statement;
+		  
+		 def loopCollector =
+		    collect| append | loopDo
+		   
+		  def loopCollectors =
+		    rep1(loopCollector)
+		  
+		  def collect =
+		    "collect" ~value ~ ";"
+		  
+		  def append =
+		    "append" ~value ~ ";"		  
+
+      //return the loop parser
+	  "loop" ~ "{" ~ loopBody ~ "}"  
+	}
+    
   
-  def collect =
-    "collect" ~value ~ ";"
+
   
-  def append =
-    "append" ~value ~ ";"
-  def loopBody =
-    loopInitializers ~ loopAssignments ~ loopCollectors 
 
    def classDefinition =
     "defclass:" ~ name ~ "("  ~ repsep(name, ",") ~")" ~ ";" 
@@ -114,9 +131,7 @@ object KFStatementParser extends KFParsers {
    
 
      
-  def typeName = types.map(keyword).reduceRight[Parser[String]](_ | _) // pipe em together
-  def flag = flags.map(keyword).reduceRight[Parser[String]](_ | _)
-  
+
   def dfaFile =
     rep1( classDefinition | functionDefinition |ruleDefinition )
   
