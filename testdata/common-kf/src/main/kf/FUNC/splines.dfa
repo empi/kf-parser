@@ -1,0 +1,91 @@
+#! UG/KF 19.0
+#
+
+
+Defun: com_getSplineControlPointList (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Returns the list of control points of a spline.
+.#
+Example:
+(List) control_points: com_getSplineControlPointList(MySpline:)
+-------------------------------------------------------------------------------
+#-
+Any $component #.Instance or Hostpointer of ug_component.#
+)
+
+@{
+  $list_of_list_of_coords << java_exec( "de.conti.tires.kite.common.NXJAVA", "getSplineControlPointList", { $component } );
+  loop {
+	  for $list_of_coords in $list_of_list_of_coords;
+	  collect com_makePoint($list_of_coords);
+  };    
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of points.#
+-------------------------------------------------------------------------------
+#-
+
+######################################################################################################################
+
+
+Defun: com_getSplineKnotsList (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Returns the list of knots for a spine.
+#
+Example:
+(List) knots: com_getSplineKnots(MySpline:)
+-------------------------------------------------------------------------------
+#-
+Any $component #.Instance or Hostpointer of ug_component.#
+)
+
+@{  
+  java_exec( "de.conti.tires.kite.common.NXJAVA", "getSplineKnotsList", { $component } );
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of points.#
+-------------------------------------------------------------------------------
+#-
+
+########################################################################################################################
+
+
+
+Defun: com_getSplineDegree (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Returns the degree of a spine.
+#
+Example:
+(List) knots: com_getSplineDegree(MySpline:)
+-------------------------------------------------------------------------------
+#-
+Any $component #.Instance or Hostpointer of ug_component.#
+)
+
+@{  
+  java_exec( "de.conti.tires.kite.common.NXJAVA", "getSplineDegree", { $component } );
+} Number;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Number - #.Integer degree.#
+-------------------------------------------------------------------------------
+#-
+
+########################################################################################################################

@@ -1,0 +1,446 @@
+#! UG/KF 18.0
+#
+
+
+DefClass: common_excel_funcs ();
+#+
+    Function:
+        com_excel_ask_header
+
+    Description:
+        Get the header informations of Excel data.
+
+    Input:
+        (List)      $excel_data
+                        Loaded Excel data
+    Return:
+        (List)      Header informations of the excel data.
+#-
+Defun: com_excel_ask_header
+        (
+        List        $excel_data
+        )
+@{
+    #++
+        Get header informations.
+    #-
+    $excel_header << Loop {
+                        For $i From 1 To 5 By 1;
+                        For $value is nth ($i, $excel_data);
+                        append {$value};
+                     };
+} List;
+
+
+#+
+    Function:
+        com_excel_ask_values
+
+    Description:
+        Get the cell values of Excel data.
+
+    Input:
+        (List)      $excel_data
+                        Loaded Excel data
+    Return:
+        (List)      Cell values of the Excel data.
+#-
+Defun: com_excel_ask_values
+        (
+        List        $excel_data
+        )
+@{
+    #++
+        Get cell values.
+    #-
+    $excel_values << Loop {
+                         For $i From 6 To length($excel_data) By 1;
+                         For $value is nth ($i, $excel_data);
+                         append {$value};
+                     };
+} List;
+
+
+#+
+    Function:
+        com_excel_ask_num_columns
+
+    Description:
+        Get the numbers of columns.
+
+    Input:
+        (List)      $excel_data
+                        Loaded excel data
+    Return:
+        (Integer)   Number of columns.
+#-
+Defun: com_excel_ask_num_columns
+        (
+        List        $excel_data
+        )
+@{
+    #++
+        Get header informations.
+    #-
+	$start_col << nth (3, $excel_data);
+	$end_col   << nth (5, $excel_data);
+    #++
+        Get number of columns.
+    #-
+    $col_count << ($end_col - $start_col) + 1;
+} Integer;
+
+
+#+
+    Function:
+        com_excel_ask_num_rows
+
+    Description:
+        Get the numbers of rows.
+
+    Input:
+        (List)      $excel_data
+                        Loaded excel data
+    Return:
+        (Integer)   Number of rows.
+#-
+Defun: com_excel_ask_num_rows
+        (
+        List        $excel_data
+        )
+@{
+    #++
+        Get header informations.
+    #-
+	$start_row << nth (2, $excel_data);
+	$end_row   << nth (4, $excel_data);
+    #++
+        Get number of rows.
+    #-
+    $row_count << ($end_row - $start_row) + 1;
+} Integer;
+
+
+#+
+    Function:
+        com_excel_ask_row
+
+    Description:
+        Get the data of the given row.
+
+    Input:
+        (List)      $excel_data
+                        Loaded excel data
+        (Integer)   $row_index
+                        Zero based row index.
+    Return:
+        (List)      Row data.
+#-
+Defun: com_excel_ask_row
+        (
+        List        $excel_data,
+        Integer     $row_index
+        )
+@{
+    #++
+        Get header informations.
+    #-
+	$sheet_index << nth (1, $excel_data);
+	$start_row   << nth (2, $excel_data);
+	$start_col   << nth (3, $excel_data);
+	$end_row     << nth (4, $excel_data);
+	$end_col     << nth (5, $excel_data);
+    #++
+        Get number of rows and columns.
+    #-
+    $row_count << ($end_row - $start_row) + 1;
+    $col_count << ($end_col - $start_col) + 1;
+    #++
+        Generate header informations.
+    #-
+    $row_header << { $sheet_index, $row_index + 1, 1, $row_index + 1, $col_count };
+    #++
+        Index to the first cell for the row.
+    #-
+    $base_index << ($col_count * $row_index) + 6;
+    #++
+        Extract all row cells.
+    #-
+    $row_list <<    if ( ($row_index >= 0) & ($row_index < $row_count) )
+                    then Loop {
+                        For $i From 0 To ($col_count - 1) By 1;
+                        For $cell is nth ($base_index + $i, $excel_data);
+                        append {$cell};
+                    }
+                    else Loop {
+                        For $i From 0 To ($col_count - 1) By 1;
+                        For $cell is "";
+                        append {$cell};
+                    };
+    #++
+        Row informations.
+    #-
+    $row << $row_header + $row_list;
+} List;
+
+
+#+
+    Function:
+        com_excel_ask_column
+
+    Description:
+        Get the data of the given column.
+
+    Input:
+        (List)      $excel_data
+                        Loaded excel data
+        (Integer)   $col_index
+                        Zero based column index.
+    Return:
+        (List)      Column data.
+#-
+Defun: com_excel_ask_column
+        (
+        List        $excel_data,
+        Integer     $col_index
+        )
+@{
+    #++
+        Get header informations.
+    #-
+	$sheet_index << nth (1, $excel_data);
+	$start_row   << nth (2, $excel_data);
+	$start_col   << nth (3, $excel_data);
+	$end_row     << nth (4, $excel_data);
+	$end_col     << nth (5, $excel_data);
+    #++
+        Get number of rows and columns.
+    #-
+    $row_count << ($end_row - $start_row) + 1;
+    $col_count << ($end_col - $start_col) + 1;
+    #++
+        Generate header informations.
+    #-
+    $col_header << { $sheet_index, 1, $col_index + 1, $row_count, $col_index + 1 };
+    #++
+        Index to the first cell for the column.
+    #-
+    $start_index << $col_index + 6;
+    #++
+        Extract all row cells.
+    #-
+    $col_list <<    if ( ($col_index >= 0) & ($col_index < $col_count) )
+                    then Loop {
+                        For $i From 0 To ($row_count - 1) By 1;
+                        For $j is $start_index + ($i * $col_count);
+                        For $cell is nth ($j, $excel_data);
+                        append {$cell};
+                    }
+                    else Loop {
+                        For $i From 0 To ($row_count - 1) By 1;
+                        For $cell is "";
+                        append {$cell};
+                    };
+    #++
+        Column informations.
+    #-
+    $col << $col_header + $col_list;
+} List;
+
+
+#+
+    Function:
+        com_excel_ask_cell
+
+    Description:
+        Get the value of the given cell.
+
+    Input:
+        (List)      $excel_data
+                        Loaded excel data
+        (Integer)   $row_index
+                        Zero based row index.
+        (Integer)   $col_index
+                        Zero based column index.
+    Return:
+        (String)    Cell value or "" if out of range.
+#-
+Defun: com_excel_ask_cell
+        (
+        List        $excel_data,
+        Integer     $row_index,
+        Integer     $col_index
+        )
+@{
+    #++
+        Get header informations.
+    #-
+	$sheet_index << nth (1, $excel_data);
+	$start_row   << nth (2, $excel_data);
+	$start_col   << nth (3, $excel_data);
+	$end_row     << nth (4, $excel_data);
+	$end_col     << nth (5, $excel_data);
+    #++
+        Get number of rows and columns.
+    #-
+    $row_count << ($end_row - $start_row) + 1;
+    $col_count << ($end_col - $start_col) + 1;
+    #++
+        Get cell value or empty string if out of range.
+    #-
+    $cell << if ( ($row_index >= 0) & ($row_index < $row_count) &
+                  ($col_index >= 0) & ($col_index < $col_count) )
+             then nth (($col_count * $row_index) + $col_index + 6, $excel_data)
+             else "";
+} String;
+
+
+#+
+    Function:
+        com_excel_set_cell
+
+    Description:
+        Set the value of the given cell.
+
+    Input:
+        (List)      $excel_data
+                        Loaded excel data
+        (Integer)   $row_index
+                        Zero based row index.
+        (Integer)   $col_index
+                        Zero based column index.
+        (String)    $cell_value
+                        New value for the cell.
+    Return:
+        (List)      Modified excel_data.
+#-
+Defun: com_excel_set_cell
+        (
+        List        $excel_data,
+        Integer     $row_index,
+        Integer     $col_index,
+        String      $cell_value
+        )
+@{
+    #++
+        Get header informations.
+    #-
+	$sheet_index << nth (1, $excel_data);
+	$start_row   << nth (2, $excel_data);
+	$start_col   << nth (3, $excel_data);
+	$end_row     << nth (4, $excel_data);
+	$end_col     << nth (5, $excel_data);
+    #++
+        Get number of rows and columns.
+    #-
+    $row_count << ($end_row - $start_row) + 1;
+    $col_count << ($end_col - $start_col) + 1;
+    #++
+        Get the list index of the cell in $excel_data.
+    #-
+    $cell_index << if ( ($row_index >= 0) & ($row_index < $row_count) &
+                        ($col_index >= 0) & ($col_index < $col_count) )
+                   then ($col_count * $row_index) + $col_index + 6
+                   else -1;
+    #++
+        Generate header informations.
+    #-
+    $new_excel_header << { $sheet_index, $start_row, $start_col, $end_row, $end_col };
+    #++
+        Set the new cell value.
+    #-
+    $new_excel_list <<  Loop {
+                            For $i From 6 To length($excel_data) By 1;
+                            For $cell is if ( $i = $cell_index )
+                                         then $cell_value
+                                         else nth ($i, $excel_data);
+                            append {$cell};
+                        };
+    #++
+        Build edited excel data.
+    #-
+    $new_excel_data << $new_excel_header + $new_excel_list;
+} List;
+
+
+#+
+    Function:
+        com_excel_make_number
+
+    Description:
+        Convert a given cell value to a number.
+
+    Input:
+        (String)    $cell_value
+                        Cell value.
+    Return:
+        (Number)    Number from the cell value.
+#-
+Defun: com_excel_make_number
+        (
+        String      $cell_value
+        )
+@{
+    #++
+        Convert the cell value to a number.
+    #-
+    MakeNumber ( charReplace ($cell_value, ",", ".") );
+} Number;
+
+
+
+#+
+    Function:
+        com_excel_ask_values_2d
+
+    Description:
+        Gives a spreadsheet as a List of Lists.
+    
+#-
+Defun: com_excel_ask_values_2d
+        (
+        List        $excel_data
+        )
+@{
+    #++
+        Convert the cell value to a number.
+    #-
+    $number_of_rows << com_excel_ask_num_rows($excel_data);
+	$number_of_cols << com_excel_ask_num_columns($excel_Data);
+	$header_offset << 6;
+	$data << loop {
+		for $row_id from 0 to $number_of_rows - 1 by 1;		
+		for $start_index is $row_id * $number_of_cols + $header_offset;
+		for $end_index is ($row_id + 1) * $number_of_cols  + $header_offset -1;		
+		collect sublist($excel_data, $start_index, $end_index );
+		
+	};	
+	$data;
+} List;
+
+
+#+
+    Function:
+        com_excel_make_string
+
+    Description:
+        Convert a given number value to a string.
+
+    Input:
+        (String)    $cell_value
+                        Cell value.
+    Return:
+        (Number)    Number from the cell value.
+#-
+Defun: com_excel_make_string
+        (
+        Number      $cell_value
+        )
+@{
+    #+
+        Convert the cell value to a number.
+    #-
+	# debug_printValues({$cell_value});
+     charReplace (format("%f", $cell_value), ".", ",");
+} String;
+

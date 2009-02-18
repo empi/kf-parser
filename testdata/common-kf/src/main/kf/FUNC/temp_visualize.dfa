@@ -1,0 +1,430 @@
+#! UG/KF 19.0
+#
+
+###############################################################################
+Defun: vis_Line (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Draw a temporary line in the active view.
+This line will disappear when the screen refreshes.
+.#
+Example:
+(Boolean) drawLine: vis_Line(Point(0,0,0), Point(1,1,1), 0);
+-------------------------------------------------------------------------------
+#-
+Point $start_point; #.Specify the start point of the line.#
+Point $end_point; #.Specify the end point of the line.#
+Integer $color #.Specify a color.#
+)
+
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "visLine", {$start_point, $end_point, $color});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Boolean - #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+
+
+###############################################################################
+Defun: vis_Point (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Draw a temporary point symbol in the active view.
+This point will disappear when the screen refreshes.
+.#
+Example:
+Loop {
+For $a From 0 To 115 By 1;
+Do vis_Text( StringValue($a), 3, Point(mod($a,16)*100,0 , ceil(-$a/16) * 200 + 100), 1 );
+Do vis_Point( Point(mod($a,16)*100, 0 , ceil(-$a/16) * 200) , $a, 2);
+}
+
+Type is between 0...115
+-------------------------------------------------------------------------------
+#-
+Point $Point; #.Specify the placement point of the symbol.#
+Integer $type; #.Specify the symbol type.#
+Integer $color #.Specify a color.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "visPoint", {$Point, $type, $color});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+
+
+###############################################################################
+Defun: vis_Text (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Draw a temporary text in the active view.
+This text will disappear when the screen refreshes.
+.#
+Example:
+(Boolean) drawText: vis_Text("Text", 2.5, Point(1,1,1), 0);
+-------------------------------------------------------------------------------
+#-
+String $str; #.Specify the text.#
+Number $text_size; #.Specify the text size.#
+Point $Point; #.Specify the placement point of the text.#
+Integer $color #.Specify a color.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "visText", {$str, $text_size , $Point, $color});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+
+
+###############################################################################
+Defun: vis_Arc (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Draw a temporary arc in the active view.
+This arc will disappear when the screen refreshes.
+.#
+Example:
+(Boolean) drawArc: vis_Arc(Point(1,1,1), 1, 3, 6, 0);
+-------------------------------------------------------------------------------
+#-
+Point $Center; #.Specify the arc center.#
+Number $start_angle; #.Specify a start angle.#
+Number $end_angle; #.Specify an end angle.#
+Number $Radius; #.Specify a radius.#
+Vector $x_vec, #.Specify the x vector.#
+Vector $y_vec, #.Specify the y vector.#
+Integer $color #.Specify a color.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "visArc", {$Center, $start_angle, $end_angle , $Radius , $x_Vec, $y_Vec, $color});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+
+
+###############################################################################
+Defun: vis_Vec (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Draw a temporary vector in the active view.
+This vector will disappear when the screen refreshes.
+.#
+Example:
+(Boolean) drawArc: vis_Vec(Point(1,1,1), Vector(2,1,1), 0);
+
+Anchor point is
+  0 - Anchor point at base of staff 
+  1 - Anchor point at tip of arrowhead 
+  2 - Anchor point at base of arrowhead
+-------------------------------------------------------------------------------
+#-
+Point $Base; #.Specify a placement point.#
+Vector $Dir; #.Specify a direction.#
+Integer $anchor #.Specify a anchor point.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "visVector", {$Base, $Dir, $anchor });
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: writeStatus (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Write a string to the status bar.
+.#
+Example:
+(Boolean) myStatus: writeStatus("I am busy!");
+
+-------------------------------------------------------------------------------
+#-
+String $str #.Specify a message string.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.NXJAVA", "writeStatus", { $str });
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: refresh (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Refresh views
+.#
+Example:
+(Boolean) myStatus: refresh();
+
+-------------------------------------------------------------------------------
+#-
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "refresh", { });
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: regenerate (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Regenerate views
+.#
+Example:
+(Boolean) myStatus: regenerate();
+
+-------------------------------------------------------------------------------
+#-
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "regenerate", { });
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.True on succeed.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: update (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Regenerate views
+.#
+Example:
+(Boolean) myStatus: update();
+
+-------------------------------------------------------------------------------
+#-
+)
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "update", { });
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: updateObject (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Regenerate object
+.#
+-------------------------------------------------------------------------------
+#-
+Any $obj)
+@{
+  java_exec("de.conti.tires.kite.common.NXJAVA", "updateInstance", { $obj});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: blank( List $objects )
+@{
+	loop{
+		for $obj in $objects;
+		for $classCheck is TypeName($obj) = Instance & ug_askInstanceClass($obj)=ug_component;
+		do if $classCheck then
+			java_exec("de.conti.tires.kite.common.Component", "blankComponent", {$obj})
+		else
+			java_exec("de.conti.tires.kite.common.Visualization", "blank", {{$obj}});
+	};
+	true;
+} Boolean;
+
+###############################################################################
+Defun: unblank( List $objects )
+@{
+	java_exec("de.conti.tires.kite.common.Visualization", "unblank", {$objects});
+} Boolean;
+
+###############################################################################
+Defun: transparency( List $objects, Integer $transparency_factor )
+@{
+	java_exec("de.conti.tires.kite.common.Visualization", "transparency", {$objects, $transparency_factor});
+} Boolean;
+
+###############################################################################
+Defun: highlight(List $objects )
+@{
+	java_exec("de.conti.tires.kite.common.Visualization", "highlight", $objects);
+} Boolean;
+
+###############################################################################
+Defun: unhighlight(List $objects )
+@{
+	java_exec("de.conti.tires.kite.common.Visualization", "unhighlight", $objects);
+} Boolean;
+
+###############################################################################
+Defun: unhighlightAll()
+@{
+  java_exec("de.conti.tires.kite.common.Visualization", "unhighlightAll", {});
+} Boolean;
+
+
+###############################################################################
+Defun: vis_setFaceColor(
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Set color of faces
+.#
+Example:
+(Boolean) setFaceColor: vis_setFaceColor({face1:, face2:}, 2);
+
+-------------------------------------------------------------------------------
+#-
+List $faces; #.list of faces.#
+Integer $color #.face color.#
+)
+@{
+	Loop {
+		For $face in $faces;
+		do java_exec("de.conti.tires.kite.common.Visualization", "setFaceColor", { $face, $color });
+	};
+	true;
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.True.#
+-------------------------------------------------------------------------------
+#-
+
+
+###############################################################################
+Defun: setKFattrValue(
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+set KF attribute value
+.#
+Example:
+(Boolean) setKFVal: setKFattrValue("PartName.prt", "root:", "saveClass", "Boolean Modifiable", "True;" );
+
+-------------------------------------------------------------------------------
+#-
+String $part_name; #.part name.#
+String $ref_chain; #.rule reference chain.#
+String $rule_name; #.rule name.#
+String $rule_unit; #.rule unit, type.#
+String $rule_text #.rule text.#
+)
+@{
+	java_exec("de.conti.tires.kite.common.NXJAVA", "setKFattrValue", { $part_name , $ref_chain, $rule_name, $rule_unit, $rule_text });
+	true;
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+- #.True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: vis_XYBoundingBox (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Draw a temporary bounding box in the XY plane.
+This box will disappear when the screen refreshes.
+.#
+Example:
+(Boolean) drawBBox: vis_XYBoundingBox(ug_refObject("Spline:R-160317-128",""), 1);
+-------------------------------------------------------------------------------
+#-
+Any $obj; #.Specify the object to draw the xy-bounding box.#
+Integer $color #.Specify a color.#
+)
+@{
+	$bbox << ug_askBoundingBoxExact( $obj, "Frame", worldFrame() );
+	vis_Line( first($bbox), Point(LocalX(second($bbox)), LocalY(first($bbox)),LocalZ(first($bbox))), $color);
+	vis_Line( first($bbox), Point(LocalX(first($bbox)), LocalY(second($bbox)),LocalZ(first($bbox))), $color);
+	vis_Line( second($bbox), Point(LocalX(first($bbox)), LocalY(second($bbox)),LocalZ(second($bbox))), $color);
+	vis_Line( second($bbox), Point(LocalX(second($bbox)), LocalY(first($bbox)),LocalZ(second($bbox))), $color);
+	true;
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Boolean - #.True.#
+-------------------------------------------------------------------------------
+#-

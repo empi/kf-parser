@@ -1,0 +1,134 @@
+#! UG/KF 19.0
+#
+
+defclass: com_func_pseq();
+
+#+
+  functions to access pitch sequences
+#-
+
+Defun: com_pseq_askPitchSequenceNames (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get a list of pitch sequence names
+.#
+Example:
+------------------------------------------------------------------------------
+#-
+String $filter #.pitch sequence name string.#
+)
+@{
+	java_exec( "de.conti.tires.cad.kf.PitchSequenceKFInterface", "getSequenceNames", { $filter } );
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of pitch sequence names.#
+-------------------------------------------------------------------------------
+#-
+
+###################################################################################################
+
+Defun: com_pseq_askPitchSequenceString (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get a string of the pitch sequence by pitch sequence name
+.#
+Example:
+------------------------------------------------------------------------------
+#-
+String $seq_name #.pitch sequence name string.#
+)
+@{
+	java_exec( "de.conti.tires.cad.kf.PitchSequenceKFInterface", "getSequence", { $seq_name } );
+} String;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of pitches.#
+-------------------------------------------------------------------------------
+#-
+
+###################################################################################################
+
+Defun: com_pseq_askPitchSequenceList (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get a list of the pitch sequence by pitch sequence name
+.#
+Example:
+------------------------------------------------------------------------------
+#-
+String $seq_name #.pitch sequence name string.#
+)
+@{
+	java_exec( "de.conti.tires.cad.kf.PitchSequenceKFInterface", "getSequenceList", { $seq_name } );
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of pitches.#
+-------------------------------------------------------------------------------
+#-
+
+###################################################################################################
+
+Defun: com_pseq_askPitchSequenceFactors (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get a list of the pitch sequence factors by pitch sequence name
+.#
+Example:
+------------------------------------------------------------------------------
+#-
+String $seq_name #.pitch sequence name string.#
+)
+@{
+	java_exec( "de.conti.tires.cad.kf.PitchSequenceKFInterface", "getFactors", { $seq_name } );
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of pitches.#
+-------------------------------------------------------------------------------
+#-
+
+###################################################################################################
+
+Defun: com_pseq_askPitchSequenceCounts (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get a list of the pitch sequence counts by pitch sequence name
+
+first item in the list is the count for pitch 1...
+.#
+Example:
+------------------------------------------------------------------------------
+#-
+String $seq_name #.pitch sequence name string.#
+)
+@{
+	java_exec( "de.conti.tires.cad.kf.PitchSequenceKFInterface", "getPitchCount", { $seq_name } );
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #.List of pitches.#
+-------------------------------------------------------------------------------
+#-
+

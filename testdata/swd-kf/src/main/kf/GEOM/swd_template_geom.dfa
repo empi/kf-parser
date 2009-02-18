@@ -1,0 +1,54 @@
+#! NX/KF 4.0
+
+DefClass: swd_template_geom (ug_base_part);
+
+
+# 95 regular ASCII characters, 10 extra symbols, minus one 'space'/blank -> 103
+(Integer Parameter Modifiable) number_of_childs: 104;  
+
+# distance between glyph cages
+(Number Parameter) dist: 20;
+
+# outer border area edge length
+(Number Parameter) overhang: 50;
+
+# inner area edge length
+(Number Parameter) size: 100;
+
+
+#(Integer Parameter Modifiable) number_of_childs: 10;  
+#  maximum of 4 lines (3 'full' lines and the remainding glyphs on an extra line)
+(Integer) glyphs_per_line: floor(number_of_childs: / 3);
+
+
+(Point Parameter Modifiable) root_origin: Point(0,0,0);
+
+(Child List) glyph_cages:
+{
+	class, swd_geom_glyph_cage;
+	quantity, number_of_childs:;
+	scale, size_scale:;
+
+	# origin is center point of cage base line
+	# point left_bottom is computed by swd_askCageStartingPoint
+	# origin.x = left_bottom.x + middle of x_width, which is 2*overhang + size =>  origin.x = left_bottom.x + size/2 + overhang	
+	# origin.x = left_bottom.y + overhang
+	origin, Point(LocalX(swd_askCageStartingPoint:( child:index:)) + overhang: + (size:/2) , LocalY(swd_askCageStartingPoint:( child:index:)) + overhang:, LocalZ(root_origin:));
+};
+
+
+
+#+
+Computes the left_bottom corner of glyph_cage indexed by $cage_index (starting from 1) 
+#-
+(Point Method) swd_askCageStartingPoint:(Number $cage_index)
+@{
+						
+	Point(LocalX(root_origin:) + (mod(($cage_index -1), glyphs_per_line:)) * # break up in row/column 
+				     (size: + dist: + 2* overhang:) - (size:/2)  - overhang:, # column   
+								LocalY(root_origin:) + floor(($cage_index -1) / glyphs_per_line:) *(size:  + dist: + 2* overhang:) - overhang:, # row 
+								LocalZ(root_origin:)); # const
+							
+};
+
+

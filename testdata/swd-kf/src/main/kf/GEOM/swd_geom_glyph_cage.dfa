@@ -1,0 +1,106 @@
+#! NX/KF 4.0
+
+DefClass: swd_geom_glyph_cage(%nx_application ug_base_part);
+
+
+
+(Number Modifiable Parameter) scale_factor: 100;
+
+(Point Modifiable Parameter) Origin: Point(0,0,0); 
+
+# Cap height
+(Number Modifiable Parameter) size: 100; 
+
+(Number) overhang: 50;
+
+
+(Point) outer_left_bottom: Point(localX(Origin:) - (size:/2)  - overhang:, localY(Origin:) - overhang:, 0);
+(Point) outer_left_top: Point(localX(Origin:) - (size:/2)  - overhang:, localY(Origin:) + size: + overhang:, 0);
+
+
+(Point) outer_right_bottom: Point(localX(Origin:) + (size:/2)  + overhang:, localY(Origin:) - overhang:, 0);
+(Point) outer_right_top: Point(localX(Origin:) + (size:/2)  + overhang:, localY(Origin:) + size: + overhang:, 0);
+
+
+(Point) inner_left_bottom: Point(localX(Origin:) - (size:/2), localY(Origin:) - overhang:, 0);
+(Point) inner_left_top: Point(localX(Origin:) - (size:/2),  localY(Origin:) + size: + overhang:, 0);
+
+
+(Point) inner_right_bottom: Point(localX(Origin:) + (size:/2), localY(Origin:) - overhang:, 0);
+(Point) inner_right_top: Point(localX(Origin:) + (size:/2), localY(Origin:) + size: + overhang:, 0);
+
+
+(Child) center_point: {
+  class, ug_point;
+	position, origin:;
+	Line_Width, thick;
+	Line_Font, solid;
+};
+
+
+(Child) left_outer_border: {
+  Class, nx_line;
+  Start_Point, outer_left_bottom:;
+  End_Point, outer_left_top:;
+	Line_Font, solid;
+  Line_Width, thick;
+};
+
+(Child) top_outer_border: {
+  Class, nx_line;
+  Start_Point, outer_left_top:;
+  End_Point, outer_right_top:;
+	Line_Font, solid;
+  Line_Width, thick;
+};
+
+(Child) right_outer_border: {
+  Class, nx_line;
+  Start_Point, outer_right_top:;
+  End_Point, outer_right_bottom:;
+	Line_Font, solid;
+  Line_Width, thick;
+};
+
+(Child) bottom_outer_border: {
+  Class, nx_line;
+  Start_Point, outer_right_bottom:;
+  End_Point, outer_left_bottom:;
+	Line_Font, solid;
+  Line_Width, thick;
+};
+
+
+(Child) left_inner_border: {
+  Class, nx_line;
+  Start_Point, Point(localX(Origin:) - (size:/2), localY(Origin:) - overhang:, 0);
+  End_Point, Point(localX(Origin:) - (size:/2),  localY(Origin:) + size: + overhang:, 0);
+	Line_Font, dashed;
+  Line_Width, Normal;
+};
+
+(Child) top_inner_border: {
+  Class, nx_line;
+  Start_Point, Point(localX(Origin:) - (size:/2)  - overhang:, LocalY(Origin:) + (size:/2) + overhang:, 0);
+  End_Point, point(localX(Origin:) + (size:/2)  + overhang:, localY(Origin:) + size:, 0);
+	Line_Font, dashed;
+  Line_Width, Normal;
+};
+
+(Child) right_inner_border: {
+  Class, nx_line;
+  Start_Point, Point(localX(Origin:) + size: - overhang:, LocalY(Origin:) + size: + overhang:, 0);
+  End_Point, point(localX(Origin:) + size: - overhang: , localY(Origin:)  - overhang:, 0);
+	Line_Font, dashed;
+  Line_Width, Normal;
+};
+
+
+(Child) bottom_inner_border: {
+  Class, nx_line;
+  Start_Point, Point(localX(Origin:) + (size:/2) + overhang:, LocalY(Origin:), 0);
+  End_Point, point(localX(Origin:)  - (size:/2) - overhang:, localY(Origin:), 0);
+	Line_Font, dashed;
+  Line_Width, Normal;
+};
+

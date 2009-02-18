@@ -1,0 +1,277 @@
+#! NX/KF 4.0
+
+DefClass: com_func_debug ();
+
+#+
+	This is for debuging.
+	
+	based on the debug?() function, additional informations to
+		- the listing window
+		- bessage box
+		- temp visualize
+	should provide additional information for developers.
+#-
+
+
+Defun: debug?(
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+check if provided environmental variable is true
+.#
+Example:
+
+(Any) debug: if debug?() then "Debug is true" else "no dubug";
+
+-------------------------------------------------------------------------------
+#-
+String $envVar #.environment variable.#
+)
+@{
+  if getEnv($envVar) = "1" then true else false;
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Integer - #.0.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: debug_messageBox(
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+method to write debug information to a message box
+use this maybe as a calculation stop message
+.#
+Example:
+
+(Any) calculation: @{
+  debugMessage({"Step into the loop"});
+  loop {
+	for $a to 10;
+	debugMessage({stringvalue($a)});
+	Collect $a;
+  }
+  debugMessage({"Finished calculation loop"});
+};
+
+-------------------------------------------------------------------------------
+#-
+List $messages #.List of string messages.#
+)
+@{
+  if debug?("KITE_DEBUG") then 
+  @{
+	ug_printMessage({"Debug: "} + $messages);
+	1;
+ }
+  else 
+	 0;
+} Integer;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Integer - #.1 if debug is active else 0.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: debug_printValues(
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+method to write debug information to NX listing.
+use this maybe as a calculation stop message
+.#
+Example:
+
+(Any) calculation: @{
+  $list << loop {
+	for $a to 10;
+	Collect $a;
+  }
+  debug_printValues({"Debug: ", $list});
+};
+
+-------------------------------------------------------------------------------
+#-
+Any $values #.List of any values.#
+)
+
+@{
+  if debug?("KITE_DEBUG") then 
+  @{
+	ug_printValues({"Debug: ", $values});
+	1;
+ }
+  else 
+	 0;
+} Integer;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Integer - #.1 if debug is active else 0.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: debug_visVec(
+#+
+debug vis vector
+#-
+Point $Base; #.Specify a placement point.#
+Vector $Dir; #.Specify a direction.#
+Integer $anchor #.Specify a anchor point.#
+)
+@{
+  if debug?("KITE_VIS_DEBUG") then 
+  @{
+	vis_Vec($Base, $Dir, $anchor);
+	1;
+ }
+  else 
+	 0;
+} Integer;
+
+###############################################################################
+Defun: debug_visArc(
+#+
+debug vis arc
+#-
+Point $Center; #.Specify the arc center.#
+Number $start_angle; #.Specify a start angle.#
+Number $end_angle; #.Specify an end angle.#
+Number $Radius; #.Specify a radius.#
+Vector $x_vec, #.Specify the x vector.#
+Vector $y_vec, #.Specify the y vector.#
+Integer $color #.Specify a color.#
+)
+@{
+  if debug?("KITE_VIS_DEBUG") then 
+  @{
+	vis_Arc($Center, $start_angle, $end_angle , $Radius , $x_vec, $y_vec, $color);
+	1;
+ }
+  else 
+	 0;
+} Integer;
+
+###############################################################################
+Defun: debug_visText(
+#+
+debug vis text
+#-
+String $str; #.Specify the text.#
+Number $text_size; #.Specify the text size.#
+Point $Point; #.Specify the placement point of the text.#
+Integer $color #.Specify a color.#
+)
+@{
+  if debug?("KITE_VIS_DEBUG") then 
+  @{
+	#vis_Text($str, $text_size , $Point, $color);
+	c_visText( $str, $text_size , $Point, $color );
+	1;
+ }
+  else 
+	 0;
+} Integer;
+
+###############################################################################
+Defun: debug_visLine(
+#+
+debug vis line
+#-
+Point $start_point; #.Specify the start point of the line.#
+Point $end_point; #.Specify the end point of the line.#
+Integer $color #.Specify a color.#
+)
+@{
+  if debug?("KITE_VIS_DEBUG") then 
+  @{
+	#vis_Line($start_point, $end_point, $color);
+	c_visLine( $start_point, $end_point, $color );
+	1;
+ }
+  else 
+	 0;
+} Integer;
+
+###############################################################################
+Defun: debug_visPoint(
+#+
+debug vis point
+#-
+Point $pnt; #.Specify the placement point of the symbol.#
+Integer $type; #.Specify the symbol type.#
+Integer $color #.Specify a color.#
+)
+@{
+  if debug?("KITE_VIS_DEBUG") then 
+  @{
+	#vis_Point($pnt, $type, $color);
+	c_visPoint( $pnt, $type, $color );
+	1;
+ }
+  else 
+	 0;
+} Integer;
+
+###############################################################################
+Defun: debug_runTime(
+#+
+debug run time
+Example:
+(Any) attribute: @{
+	$startTime << time_now();
+	
+	... your code
+	
+	debug_runTime($startTime);
+	$returnValue;
+};
+
+#-
+String $startTime; #.start Time.#
+String ($CodeMarker; "") #.Code Marker, output where the measurement took place.#
+)
+@{
+  if debug?("KITE_DEBUG") then 
+  @{
+	$timer << time_runtime($startTime);
+	ug_printValues({"DebugRunTimeMeasurement:" , format("%8d", $timer), " msec. CodeMarker: " + $CodeMarker});
+	1;
+ }
+  else 
+	 0;
+} Integer;
+
+###############################################################################
+Defun: debug_getSystemTime(
+#+
+return the current systemTime in msec
+#-
+)
+@{
+  java_exec("de.conti.tires.kite.common.NXJAVA", "getSystemTime", {});
+} String;
+
+###############################################################################
+Defun: debug_getSystemTimeDifference(
+#+
+return the current systemTime in msec
+#-
+String $systemTime #.start system time to measure to now.#
+)
+@{
+   java_exec("de.conti.tires.kite.common.NXJAVA", "getSystemTimeDifference", {$systemTime});
+} String;
+

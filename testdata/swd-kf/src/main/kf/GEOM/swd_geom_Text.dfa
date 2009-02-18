@@ -1,0 +1,693 @@
+#! NX/KF 5.0
+
+DefClass: swd_geom_Text ( %ug_create_instance );
+
+# flag: start geomery creation only when ready
+(boolean Modifiable Parameter) 	ok_to_create_geom:		false;
+
+# used to give names to dynamically created geometry 
+(String modifiable) 						identifier: 					"";
+
+# used by %ug_create_instance		
+(String) 												%ask_name:						"SWD_text";
+
+# relates to an .bmp file that needs to sit in %UGII_SITE_DIR%/application
+(String) 												%icon_name: 					"swd_font_editor_16x16";
+
+# +
+# hash-y list of layout parameters and constraints
+(List modifiable parameter) layout: {};
+
+(Boolean modifiable parameter) tilt_on_contour?: false;
+
+(Boolean modifiable parameter) use_bottom_half?: false;
+
+#(List Uncached) %onObjectHighlight: flatten(glyphs:);
+(List Uncached) %onObjectHighlight: {};
+# triggered and required by base class %ug_create_instance
+# all geom creation via ug_create_instance needs to be done
+# inside here (right here or per indirection)
+( List ) %apply_ug_createInstance:
+@{
+  if(ok_to_create_geom:) then @{
+		# get a uinique ID
+    saveInstanceID:();	            
+		# trigger creation
+    glyphs:;    
+		# standard return for  %apply_ug_createInstance:
+		# see docs for  %apply_ug_createInstance:
+    { 0 };
+  } else @{
+    {0};
+  };
+};
+
+
+
+(List) laid_out_points:
+@{ 
+	$strategy << com_askHashValue("layout_strategy", com_askHashValue("line_constraints",first( layout:)));
+	if($strategy == Circle) then
+		circle_rotated_points:
+	else if($strategy == StraightLine) then
+		line_rotated_points:
+	else @{
+		ug_printListWin("Unknown layout strategy");
+		{};
+	};
+};
+
+(List) plain_points:
+@{
+	loop{
+		for $line_data	in layout:;
+		collect com_askHashValue("localised_curves", $line_data);
+	};
+};
+
+# font defined in XY, 
+# we're working in YZ here
+(List) plane_adjusted_points:
+@{
+	loop{
+		for $line_idx 					from 1 to Length(layout: );
+		for $curves							is nth($line_idx, plain_points:);
+		collect loop {
+      For $curve in $curves;	      
+      Collect Loop {
+        For $pointlist in $curve;
+        collect loop{
+          For $p in $pointlist;
+					For $x_coord Is LocalX($p);
+          For $y_coord Is LocalY($p);
+          For $z_coord Is LocalZ($p);
+          collect Point($z_coord, $x_Coord, $y_coord);
+        };
+			};
+		};
+	};
+};
+
+(List) sheared_points:
+@{
+  loop {
+    for $line_idx 					from 1 to Length(layout: );
+    for $line_data					is  nth($line_idx, layout:);
+    for $line_constraints 	is	com_askHashValue("line_constraints", $line_data);
+    for $shear_angle 				is com_askHashValue( "shearing_angle", $line_constraints);
+    for $curves							is nth($line_idx, plane_adjusted_points:);		
+    collect Loop {
+      For $curve in $curves;	      
+      Collect Loop {
+        For $pointlist in $curve;
+        collect loop{
+          For $p in $pointlist;
+          For $z_coord Is Localz($p);
+          For $y_off Is If tan(90-$shear_angle) = 0 then 0 else $z_coord / tan(90-$shear_angle);
+          collect Point( localx($p),  Localy($p) + $y_off,$z_coord);
+        };
+      };
+    };
+ };
+};
+
+# worst attribute name ever
+(List) pointed_points:
+@{
+	
+	$boundingz << loop{
+		for $line_idx 					from 1 to Length(layout: );
+		for $curves							is nth($line_idx, sheared_points:);
+		collect loop {
+      For $curve in $curves;	      
+      Collect Loop {
+        For $pointlist in $curve;
+        collect loop{
+          For $p in $pointlist;
+          collect localz($p);
+        };
+			};
+		};
+	};	
+  loop {
+    for $line_idx 					from 1 to Length(layout: );
+    for $line_data					is  nth($line_idx, layout:);
+    for $line_constraints 	is	com_askHashValue("line_constraints", $line_data);
+    for $pointing_angle 		is 	com_askHashValue( "pointing_angle", $line_constraints);
+		for $line_bounding_z		is	flatten(nth($line_idx, $boundingz));
+		for	$offset 						is (maxList($line_bounding_z) - minList($line_bounding_z))/2;	
+    for $curves							is nth($line_idx, sheared_points:);		
+    collect Loop {
+      For $curve in $curves;	      
+      Collect Loop {
+        For $pointlist in $curve;
+        collect loop{
+          For $p in $pointlist;
+          For $z_coord Is Localz($p);
+	        For $z_comp Is If tan(90-$pointing_angle) = 0 then 0 else $z_coord / tan(90-$pointing_angle);
+	        For $y_comp Is if $offset = 0 then LocalY($p) else LocalY($p)/$offset;  
+          collect Point( localx($p), LocalY($p)+  $z_comp * $y_comp ,$z_coord);
+        };
+      };
+    };
+ };
+
+# execute the transformation
+
+};
+
+(List) scaled_points:
+@{
+  loop {
+    for $line_idx 					from 1 to Length(layout: );
+    for $line_data					is  nth($line_idx, layout:);
+    for $line_constraints 	is	com_askHashValue("line_constraints", $line_data);
+    for $font_size					is 	com_askHashValue("font_size", $line_constraints );
+		for $font_size_factor 	is	$font_size / swd_defaultFontHeight();
+    for $line_points 				is nth($line_idx, pointed_points:);
+    collect loop{
+      for $glyph_index from 1 to length($line_points);
+      for $curves 	is nth($glyph_index, $line_points);
+      collect loop {
+        for $curve in $curves;
+        collect loop {
+          for $p in $curve;
+          for $x is localx($p); 
+          for $y is localy($p); 	
+          for $z is localz($p); 
+          for $new_p is point(
+            $x * $font_size_Factor,
+            $y * $font_size_Factor,		
+            $z * $font_size_Factor		
+                     );	
+          collect $new_p;        
+        };
+      };	
+    };
+  };  
+};
+
+(List) bow_expanded_points:
+@{
+	$line_Data << first(layout:); # ask the first line if bow expand is on
+	$line_constraints << com_askHashValue("line_constraints", $line_data);
+	$do_bow_expand? << com_askHashValue("bow_expand?", $line_constraints);	
+	$expanded_curves << if $do_bow_expand? then @{
+    loop {
+      for $line_idx 					from 1 to Length(layout: );
+      for $line_data					is  nth($line_idx, layout:);
+      for $line_points 				is nth($line_idx, scaled_points:);
+      for $circle_radius			is 	swd_askRadius($line_constraints);
+      collect Loop {
+        For $curve in $line_points;	
+        Collect Loop {
+          For $point_list in $curve;
+          collect loop{
+            For $p in  $point_list;						
+            For $offset is Localz($p); #
+            For $bow 		Is Localy($p) *(1+$offset/$circle_radius) ;
+	          For $len 		Is $circle_radius+$offset; # move out on radius
+            For $angle 	Is $bow*180 / ($len * Pi());
+            For $new_p 	Is	RotateVector( Vector(0, 0 ,$len), $angle, Vector(-1,0,0) )*$len; 		# rot a Z Vector around -X axis					
+						for $new_x  is	LocalX($new_p);
+						for $new_y 	is 	LocalY($new_p) ;
+						for $new_z 	is 	LocalZ($new_p)- $circle_radius;	# move back to center
+						collect Point($new_x, $new_y, $new_z);
+          };
+        };
+      };
+    };
+	}
+	else scaled_points:;
+};
+
+(List) tilted_points_circle:
+@{
+	if( tilt_on_contour?: ) then @{
+			loop {
+        for $line_idx 					from 	1 to Length(layout: );
+        for $line_data					is  	nth($line_idx, layout:);
+        for $line_constraints 	is		com_askHashValue("line_constraints", $line_data);
+        for $widths							is	 	com_askHashValue("widths", $line_data);
+        for $spacings						is	 	com_askHashValue("spacings", $line_data);
+        for $font_size					is 		com_askHashValue("font_size", $line_constraints );
+				for $font_size_factor 	is		$font_size / swd_defaultFontHeight();
+        for $circle_radius			is 		swd_askRadius($line_constraints);
+				for $offset_angle				is   	swd_askOffsetAngle($line_constraints);
+        for $offset_angles 			is 		loop{
+          #  sum of widths and spacings of previous glyphs.
+          for $glyph_counter 		from 	1 to length($widths); # 'for .. is .. then' will run thru once without any execution, 
+                                                      # so if we start with 1, we'll have a 2 the first time we actually enter the loop
+                                                      # which is what we want!
+          for $complete_distance is 	first($widths) * 0.5 * $font_size_factor 
+							then $complete_distance +  $font_size_factor *( nth($glyph_counter, $widths) + nth($glyph_counter -1, $spacings));
+									# all previous distances + current scaled (width + spacing)
+									# one spacing value per pair, length(spacings) = length(widths) - 1
+          collect (-1 * com_arcCentralAngle($circle_radius, $complete_distance)) + $offset_angle;		 
+        };
+				for $start_point				is 		swd_askArcCenter($line_constraints);	
+        for $arc_center_y				is 		LocalY($start_point);
+        for $arc_center_z				is 		LocalZ($start_point);
+				for $middle_line_offset	is		$font_size * 0.5;	
+				for $center							is		Point(0,0,0);
+				# figure out the tilting radii if we're on a non-centric circle
+				# offset each character by its offset angle	and circle radius (rotate it)
+				# compute the corresponding radius for the centric circle
+				for $tilt_radii					is		loop {
+					for $angle						in 		$offset_angles;		
+					for $old_Y						is		0;
+					for $old_z						is		$circle_Radius + $middle_line_offset;
+					for $y								is 		$old_Y *cos($angle) - $old_z * sin($angle) + $arc_center_y;                  
+					for $z								is		$old_Y *sin($angle) + $old_z * cos($angle) + $arc_center_z ;
+					for $tilting_radius		is		dist($center, point(0,$y,$z)); # distance to center Pythagoras style.
+					collect $tilting_radius;
+				};
+				for $xOffsets 					is 		loop {
+					for $tilt_radius			in 		$tilt_radii;
+					collect swd_XOffset($tilt_radius, "use_bottom_half", use_bottom_half?:); # is 0 if no contour present	
+				};
+				for $tang_Angles 				is 		loop {
+					for $tilt_radius			in 		$tilt_radii;
+					collect swd_askTangentOnContourAngle($tilt_radius, "use_bottom_half", use_bottom_half?:);
+				};
+        for $tilt_axes_rotation	is		loop { #how far off is the rotation axis from the center axis of the shape?
+          for $rotation_angle		in 		$offset_angles;	
+          for	$old_y						is		0;
+          for $old_z						is		$circle_Radius + $middle_line_offset;
+					for $y								is 		$old_Y *cos($rotation_angle) - $old_z * sin($rotation_angle) + $arc_center_y;                  
+					for $z								is		$old_Y *sin($rotation_angle) + $old_z * cos($rotation_angle) + $arc_center_z ;
+          for	$tilt_axis_angle	is		Angle2Vectors(Vector(0,0,1), Vector(0,$y, $z), Vector(1,0,0) );
+          collect  $rotation_angle - $tilt_axis_angle;
+        };
+        for $line_points 				is 		nth($line_idx, bow_expanded_points:);				
+        collect loop{
+          for $glyph_index 			from 1 to length($line_points);
+          for $curves 		 			is nth($glyph_index, $line_points);
+          for $tang_Angle	 			is nth($glyph_index, $tang_Angles);
+          for $xOffset	 				is nth($glyph_index, $xOffsets);
+          for $tilt_axis_angle	is nth($glyph_index, $tilt_axes_rotation);
+          collect loop {
+            for $curve in $curves;
+            collect loop {
+              for $p in $curve;
+              # rotate so the tilting axis fits
+              for $axis_rot_p is @{
+                $x << localx($p);
+                $y << LocalY($p); # move left to center
+                $z << LocalZ($p) - $middle_line_offset; # move down to center
+                Point(								
+                  $x,
+                  $y *cos( $tilt_axis_angle) - $z * sin(  $tilt_axis_angle),                  
+                  $y *sin( $tilt_axis_angle) + $z * cos( $tilt_axis_angle) 
+                );
+              };
+              # come on baby, do the tilt
+              for $tilted_p is @{
+                $x << localx($axis_rot_p);
+                $y << localy($axis_rot_p);
+                $z << LocalZ($axis_rot_p);	
+                # rotate around y axis																																														
+                point(
+                  $z * sin($tang_Angle) + $x * cos($tang_angle) + $xOffset,
+                  $y ,                  
+                  $z * cos($tang_angle) - $x* sin($tang_angle); 
+                );
+              };
+              # rotate the tilting axis back into place
+              for $new_p is @{
+                $x << localx($tilted_p);
+                $y << LocalY($tilted_p); 
+                $z << LocalZ($tilted_p); # move down to center
+                Point(
+                  $x,
+                  $y *cos( -$tilt_axis_angle) - $Z * sin( -$tilt_axis_angle),                  
+                  $y *sin( -$tilt_axis_angle) + $z * cos( -$tilt_axis_angle) + $middle_line_offset
+                );
+              };
+              collect $new_p;        
+            };
+          };	
+        };
+      };
+	} else bow_expanded_points:;
+};
+
+(List) circle_rotated_points:
+@{		
+	loop {
+		for $line_idx 				from 1 to Length(layout: );
+		for $line_data				is    nth($line_idx, layout:);
+		for $widths						is	 	com_askHashValue("widths", $line_data);
+		for $spacings					is	 	com_askHashValue("spacings", $line_data);
+		for $line_constraints is	 	com_askHashValue("line_constraints", $line_data);
+		for $circle_radius		is   	swd_askRadius($line_constraints);
+		for $offset_angle			is   	swd_askOffsetAngle($line_constraints);
+		for $font_size				is 	 	com_askHashValue("font_size", $line_constraints );	
+		for $font_size_factor is		$font_size / swd_defaultFontHeight();
+		for $start_point			is 		swd_askArcCenter($line_constraints);	
+		for $arc_center_y			is 		LocalY($start_point);
+		for $arc_center_z			is 		LocalZ($start_point);
+		for $offset_angles is loop{
+     #  sum of widths and spacings of previous glyphs.
+     for $glyph_counter from 1 to length($widths); # 'for .. is .. then' will run thru once without any execution, 
+                                                  # so if we start with 1, we'll have a 2 the first time we actually enter the loop
+                                                  # which is what we want!
+     for $complete_distance is first($widths) * 0.5 * $font_size_factor 
+		 	then $complete_distance +  $font_size_factor *( nth($glyph_counter, $widths) + nth($glyph_counter -1, $spacings)); 
+			# all previous distances + current scaled (width + spacing)
+			# one spacing value per pair, length(spacings) = length(widths) - 1
+		 collect (-1 * com_arcCentralAngle($circle_radius, $complete_distance)) + $offset_angle;		 
+  	}; #end offset loop
+		for $line_points 		is nth($line_idx, tilted_points_circle:);
+		collect loop{
+      for $glyph_index from 1 to length($line_points);
+      for $curves 	is nth($glyph_index, $line_points);
+      for $angle 		is nth($glyph_index, $offset_angles);
+      collect loop {
+        for $curve in $curves;
+        collect loop {
+          for $p in $curve;
+          for $x 			is localx($p);  									# no need to move it in y direction, rotation will take care of that
+          for $y 			is localY($p);
+          for $z			is LocalZ($p) + $circle_radius; # move it the circle radius distance from center so the subsequent rotation works correctly
+					collect Point(					
+					 	$x,
+            $y *cos($angle) - $Z * sin($angle) + $arc_center_y,                  
+						$y *sin($angle) + $z * cos($angle) + $arc_center_z 
+					);
+        };
+      };	
+    };
+	};
+};
+
+# also does scaling
+(List) line_aligned_points:
+@{			
+	loop {
+		for $line_idx 				from 1 to Length(layout: );
+		for $line_data				is    nth($line_idx, layout:);
+		for $widths						is	 	com_askHashValue("widths", $line_data);
+		for $spacings					is	 	com_askHashValue("spacings", $line_data);
+		for $line_constraints is	 	com_askHashValue("line_constraints", $line_data);
+		for $font_size				is 	 	com_askHashValue("font_size", $line_constraints );	
+		for $font_size_factor is		$font_size / swd_defaultFontHeight();
+		for $distances				is 		loop{
+     #  sum of widths and spacings of previous glyphs.
+     for $glyph_counter from 1 to length($widths); # 'for .. is .. then' will run thru once without any execution, 
+                                                  # so if we start with 1, we'll have a 2 the first time we actually enter the loop
+                                                  # which is what we want!
+     for $complete_distance is first($widths) * 0.5 * $font_size_factor # move by half width
+		 	then $complete_distance +  $font_size_factor *( nth($glyph_counter, $widths) + nth($glyph_counter - 1, $spacings)); 
+			# all previous distances + current scaled (width + spacing)
+			# one spacing value per pair, length(spacings) = length(widths) - 1
+		 collect $complete_distance;		 
+  	}; #end offset loop
+		for $line_points 		is nth($line_idx, pointed_points:);
+		collect loop{
+      for $glyph_index 	from 1 to length($line_points);
+      for $curves 			is nth($glyph_index, $line_points);
+      for $distance			is nth($glyph_index, $distances);
+      collect loop {
+        for $curve in $curves;
+        collect loop {
+          for $p in $curve;
+          for $x is localx($p) * $font_size_factor;
+          for $y is localy($p) * $font_size_factor;
+          for $z is localz($p) * $font_size_factor;
+          collect Point($x, $y, $z) + Vector(0, $distance, 0);
+        };
+      };	
+    };
+	};
+};
+
+(List)	tilted_points_straight:
+@{
+	if( tilt_on_contour?: ) then @{
+    loop {
+      for $line_idx 				from  1 to Length(layout: );
+      for $line_data				is    nth($line_idx, layout:);
+      for $widths						is	 	com_askHashValue("widths", $line_data);
+      for $spacings					is	 	com_askHashValue("spacings", $line_data);
+      for $line_constraints is	 	com_askHashValue("line_constraints", $line_data);
+      for $font_size				is 	 	com_askHashValue("font_size", $line_constraints );	
+      for $font_size_factor is		$font_size / swd_defaultFontHeight();
+      for $distances				is 		loop{
+       #  sum of widths and spacings of previous glyphs.
+       for $glyph_counter from 1 to length($widths); # 'for .. is .. then' will run thru once without any execution, 
+                                                    # so if we start with 1, we'll have a 2 the first time we actually enter the loop
+                                                    # which is what we want!
+       for $complete_distance is first($widths) * 0.5 * $font_size_factor # move by half width
+       then $complete_distance +  $font_size_factor *( nth($glyph_counter, $widths) + nth($glyph_counter - 1, $spacings)); 
+        # all previous distances + current scaled (width + spacing)
+        # one spacing value per pair, length(spacings) = length(widths) - 1
+       collect $complete_distance;		 
+      }; #end offset loop
+			for $start_point				is 		com_askHashValue("start_point",$line_constraints);	
+      for $start_point_y			is 		LocalY($start_point);
+      for $start_point_z			is 		LocalZ($start_point);
+      for $middle_line_offset	is		$font_size * 0.5;	
+			for $rotation_angle 		is		com_askHashValue("rotation_angle", $line_constraints);			
+      for $org_z							is		$middle_line_offset;
+			for $center							is		Point(0,0,0);
+      # figure out the tilting radii if we're on a non-centric circle
+      # offset each character by its offset angle	and circle radius (rotate it)
+      # compute the corresponding radius 
+      for $tilt_radii					is		loop {
+        for $distance					in 		$distances;
+				for	$org_y						is		$distance;
+        for $y 								is 		$org_y *cos($rotation_angle) - $org_z * sin($rotation_angle) + $start_point_y;  
+				for $z 								is 		$org_y *sin($rotation_angle) + $org_z * cos($rotation_angle) + $start_point_z;
+        for $tilting_radius		is		dist($center, Point(0,$y, $z));
+        collect $tilting_radius;
+      };
+      for $xOffsets 					is 		loop {
+        for $tilt_radius			in 		$tilt_radii;
+        collect swd_XOffset($tilt_radius, "use_bottom_half", use_bottom_half?:); # is 0 if no contour present	
+      };
+      for $tang_Angles 				is 		loop {
+        for $tilt_radius			in 		$tilt_radii;
+        collect swd_askTangentOnContourAngle($tilt_radius, "use_bottom_half", use_bottom_half?:);
+      };					
+			# todo move this computation into tilt_radii loop
+			for $tilt_axes_rotation	is		loop { #how far off is the rotation axis from the center axis of the shape?
+				for $distance					in 		$distances;	
+				for	$org_y						is		$distance;
+        for $y 								is 		$org_y *cos($rotation_angle) - $org_z * sin($rotation_angle) + $start_point_y;  
+				for $z 								is 		$org_y *sin($rotation_angle) + $org_z * cos($rotation_angle) + $start_point_z;
+				for	$tilt_axis_angle	is		Angle2Vectors(Vector(0,0,1), Vector(0,$y, $z), Vector(1,0,0) );
+				collect  $rotation_angle - $tilt_axis_angle;
+
+			};
+      for $line_points 				is nth($line_idx, line_aligned_points:);
+      collect loop{
+        for $glyph_index 			from 1 to length($line_points);
+        for $curves 					is nth($glyph_index, $line_points);
+        for $distance					is nth($glyph_index, $distances);
+        for $tang_Angle	 			is nth($glyph_index, $tang_Angles);
+        for $xOffset	 				is nth($glyph_index, $xOffsets);
+				for $tilt_axis_angle	is nth($glyph_index, $tilt_axes_rotation);
+        collect loop {
+          for $curve in $curves;
+          collect loop {
+            for $p in $curve;
+						# rotate so the tilting axis fits
+						for $axis_rot_p is @{
+							$x << localx($p);
+							$y << LocalY($p) - $distance; # move left to center
+							$z << LocalZ($p) - $middle_line_offset; # move down to center
+							Point(								
+  		          $x,
+			  		    $y *cos( $tilt_axis_angle) - $z * sin(  $tilt_axis_angle),                  
+								$y *sin( $tilt_axis_angle) + $z * cos( $tilt_axis_angle) 
+							);
+						};
+						# come on baby, do the tilt
+						for $tilted_p is @{
+							$x << localx($axis_rot_p);
+							$y << localy($axis_rot_p);
+							$z << LocalZ($axis_rot_p);	
+	            # rotate around y axis																																														
+              point(
+                $z * sin($tang_Angle) + $x * cos($tang_angle) + $xOffset,
+                $y ,                  
+                $z * cos($tang_angle) - $x* sin($tang_angle); 
+              );
+						};
+						# rotate the tilting axis back into place
+            for $new_p is @{
+							$x << localx($tilted_p);
+							$y << LocalY($tilted_p); 
+							$z << LocalZ($tilted_p); # move down to center
+							Point(
+								$x,
+  		          $y *cos( -$tilt_axis_angle) - $Z * sin( -$tilt_axis_angle) +  $distance,                  
+								$y *sin( -$tilt_axis_angle) + $z * cos( -$tilt_axis_angle) + $middle_line_offset
+							);
+						};
+            collect $new_p;        
+          };
+        };	
+      };
+    };
+  }	
+	else
+	line_aligned_points:;
+};
+
+
+
+(List) line_rotated_points:
+@{		
+	loop {
+		for $line_idx 				from 1 to Length(layout: );
+		for $line_data				is    nth($line_idx, layout:);
+		for $line_constraints is	 	com_askHashValue("line_constraints", $line_data);		
+		for $start_point			is 		com_askHashValue( "start_point", $line_constraints);
+		for $start_point_vec	is 		Vector(localx($start_point), localy($start_point), localz($start_point));
+		for $rotation_angle		is 		com_askHashValue( "rotation_angle", $line_constraints);
+		for $line_points 			is 		nth($line_idx, tilted_points_straight:);
+		for $font_size				is 		com_askHashValue("font_size", $line_constraints);
+		for $font_size_factor is		$font_size * 1.0/ swd_defaultFontHeight();
+		collect loop{
+      for $glyph_index from 1 to length($line_points);
+      for $curves 	is nth($glyph_index, $line_points);
+      collect loop {
+        for $curve in $curves;   
+         collect loop {
+           for $p in $curve;
+           for $x is localx($p);
+           for $y is localy($p);
+           for $z is localz($p);
+           collect point( $x,
+													$y *cos($rotation_angle) - $Z * sin($rotation_angle),                  
+													$y *sin($rotation_angle) + $z * cos($rotation_angle)
+                        ) + $start_point_vec;
+         };
+      };	
+    };
+	};
+};
+
+
+# +			
+# does the actual geometry creation	
+# asks layout: (which gets passed in via parameter passing) for lists of curve types, coordinates etc.
+# and then loops over these to create the appropriate curves
+(List) glyphs: 
+@{	   
+  $glyphs << loop{
+    for $line_idx													from 1 to length(layout:);
+    for $line_data												is nth($line_idx,layout:);
+    for $curve_types_for_all_glyphs				is com_AskHashValue("curve_types", $line_data );
+    for $curves_points										is nth($line_idx, laid_out_points: );		
+    for $all_spline_knots									is com_AskHashValue("knots", $line_data );
+    for $all_spline_degrees								is com_AskHashValue("spline_degrees", $line_data );
+    collect loop{       # single glyph/character/ font-shape/thingamong   
+      # one glyph may have several curves	 
+      for $glyph_counter 									from  1 to length($curve_types_for_all_glyphs );
+      for $curve_types_for_glyph 					in $curve_types_for_all_glyphs;
+      for $glyph_curves 									in $curves_points;
+      for $spline_knots_for_glyph 				in $all_spline_knots;
+      for $spline_degrees_for_glyph 			in $all_spline_degrees;
+      # from glyph_level down to curve level
+      collect loop{
+       for $curve_counter from 1 to   length($curve_types_for_glyph);
+       for $curve_type is 						nth($curve_counter, $curve_types_for_glyph);
+       for $points is 								nth($curve_counter, $glyph_curves);
+       for $knots is 									nth($curve_counter, $spline_knots_for_glyph);
+       for $spline_degree is 					nth($curve_counter, $spline_degrees_for_glyph);
+       for $instance_name is 					identifier: +"_top_" +     format("%05d", $line_idx) +"_" +  format("%05d", $glyph_counter) +"_" + 
+                                      		format("%05d", $curve_counter); # e.g. Tue_Jan_13_16_09_37_2009__top__00001_00001_00001    		
+				# most curves 
+       for $wrapped_points is					 loop{
+                                        for $p in $points;
+                                        collect {$p};
+                                      };																
+    
+       collect  if($curve_type = "ug_spline_cntl") then 
+    
+              ug_createInstance (
+                {
+                    Class,            ug_spline_cntl;  
+                    Degree,						$spline_degree,
+                    Periodic?, 				FALSE;
+                    givenName,       	$instance_name;
+                    points,						$wrapped_points;
+                    knots,						$knots;
+                    Color, 						212;
+                    Layer, 						1;
+                    Font, 						solid;
+                    Width, 						Normal;
+                    Reference_Sets, 	{};
+                }
+             )
+    
+         else if ($curve_type = "nx_curve") then
+    
+              ug_createInstance (
+                {
+                    Class,            ug_spline_cntl;  
+                    Degree,						3,
+                    Periodic?, 				FALSE;
+                    givenName,       	$instance_name;
+                    points,						$wrapped_points;
+                    knots,						$knots;
+                    Color, 						212;
+                    Layer, 						1;
+                    Font, 						solid;
+                    Width, 						Normal;
+                    Reference_Sets, 	{};
+                  }
+             )
+    
+         else if ($curve_type = "nx_line" |$curve_type = "nx_arc" | $curve_type = "nx_ellipse" ) then
+    
+              ug_createInstance (
+                {
+                    Class, 						ug_spline_thru;
+                    Degree, 					3;
+                    Periodic?, 				FALSE;
+                    points,						$wrapped_points;
+                    givenName,       $instance_name;
+                    Color, 						212;
+                    Layer, 						1;
+                    Font, 						solid;
+                    Width, 						Normal;
+                    Reference_Sets, 	{};
+									}						 
+            )
+         else  if ($curve_type = "ug_spline_thru") then
+    
+            ug_createInstance (
+              {
+                  Class, 						ug_spline_thru;
+                  Degree, 					$spline_degree;
+                  Periodic?,				FALSE;
+                  points,						$wrapped_points;
+                  givenName,       	$instance_name;
+                  Color, 						212;
+                  Layer, 						1;
+                  Font, 						solid;
+                  Width, 						Normal;
+                  Reference_Sets, 	{};
+              }
+           )
+       else
+         @{
+           ug_printValues({"dont't know how to handle type ", $curve_type});
+         };         
+    	};
+  	};
+	};   
+};
+
+	
+
+# uses a timestring to create an identifier-prefix for the list of glyphs represented by this insance
+(Any Method) saveInstanceID:()
+@{
+  if(Length(identifier: ) = 0 ) then StoreValue(com_datetimestring() , self:, identifier ) else 0;
+};
+

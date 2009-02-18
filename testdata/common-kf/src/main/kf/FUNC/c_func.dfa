@@ -1,0 +1,73 @@
+#! UG/KF 18.0
+#
+# the parameters $lib and $func_name are default parameters for CFunc
+
+Defun: openPartUI(
+		Boolean ($load; false);
+		String ($lib; "common-cpp");
+		String($func_name; "openPartUI")) 
+	@{
+		CFunc("UF_KF_invoke_user_function_dialog"; "libufun");
+	} String;
+
+Defun: getSectionCurvesStartPoint(
+		List $curves;
+		Boolean $reverse;
+		String ($lib; "common-cpp");
+		String($func_name; "startSectionPoint")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} Point;
+
+Defun: c_getComponentFileName(
+		Any $comp; #.ug_component.#
+		String ($lib; "common-cpp");
+		String($func_name; "getComponentFileNameByComponent")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} Any;
+	
+Defun: c_visPoint(
+		Point $Point; #.Specify the placement point of the symbol.#
+		Integer $type; #.Specify the symbol type.#
+		Integer $color; #.Specify a color.#
+		String ($lib; "common-cpp");
+		String($func_name; "cVisPoint")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} Any;
+
+Defun: c_visLine(
+		Point $start_point; #.Specify the start point of the line.#
+		Point $end_point; #.Specify the end point of the line.#
+		Integer $color; #.Specify a color.#
+		String ($lib; "common-cpp");
+		String($func_name; "cVisLine")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} Any;
+	
+Defun: c_visText(
+		String $str; #.Specify the text.#
+		Number $text_size; #.Specify the text size.#
+		Point $Point; #.Specify the placement point of the text.#
+		Integer $color; #.Specify a color.#
+		String ($lib; "common-cpp");
+		String($func_name; "cVisText")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} Any;	
+
+Defun: cRefresh(
+		String ($lib; "common-cpp");
+		String($func_name; "crefresh")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} Any;
+	
+Defun: c_getSystemTime(
+		String ($lib; "common-cpp");
+		String($func_name; "cgetSystemTime")) 
+	@{
+		CFunc("UF_KF_invoke_user_function"; "libufun");
+	} String;

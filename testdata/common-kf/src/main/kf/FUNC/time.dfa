@@ -1,0 +1,65 @@
+#! UG/KF 19.0
+#
+
+###############################################################################
+Defun: time_now (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get System time for time measurement
+.#
+Example:
+(Boolean) now: ;
+
+This will return: {"value1","value2"}
+-------------------------------------------------------------------------------
+#-
+)
+@{
+  first(com_regexp( dateTimeString( "localTime?", True ), "[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}"));
+} String;
+#+
+-------------------------------------------------------------------------------
+Returns:
+String - #System time#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: time_runtime (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+get System time for time measurement
+.#
+Example:
+(Boolean) now: ;
+
+This will return: {"value1","value2"}
+-------------------------------------------------------------------------------
+#-
+String $startTime #.System time string returned by time_now().#
+)
+@{
+  
+  $now << time_now();
+  # get all in seconds
+  $times_start << SplitString($startTime, ":");
+  $sec_start << makeNumber(first($times_start )) * 3600 + makeNumber(second($times_start)) * 60 + makeNumber(third($times_start));
+  
+  $times_now << SplitString($now, ":");
+  $sec_now << makeNumber(first($times_now )) * 3600 + makeNumber(second($times_now)) * 60 + makeNumber(third($times_now));
+
+  $sec_now - $sec_start;
+  
+} Number;
+#+
+-------------------------------------------------------------------------------
+Returns:
+String - #System time#
+-------------------------------------------------------------------------------
+#-

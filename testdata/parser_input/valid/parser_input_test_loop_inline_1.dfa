@@ -1,0 +1,6 @@
+#! NX/KF 4.0
+
+DefClass: parser_input_test_loop_inline_1(ug_base_part);
+
+
+(List Parameter Modifiable) theList: {1,2,3, loop{ for $i from 0 to 5; collect $i;}};

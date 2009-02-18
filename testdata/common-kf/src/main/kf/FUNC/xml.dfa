@@ -1,0 +1,89 @@
+#! UG/KF 19.0
+#
+
+###############################################################################
+Defun: xmlRead (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Search all {"node1", "node2"} in xml File and return its values.
+If the search node is not found "none" is returned as value.
+.#
+Example:
+(Boolean) xmlRead: xmlRead("fileName.xml", {"Node1", "Node2",...});
+
+This will return: {"value1","value2"}
+-------------------------------------------------------------------------------
+#-
+String $xml_file; #.Specify the xml file name.#
+List $xml_data #.Specify the data to be found.#
+)
+@{
+  $xml_return << java_exec("de.conti.tires.kite.common.Xml" , "xmlRead", {$xml_file, $xml_data});
+  Loop {
+	For $a In $xml_data;
+	For $b In $xml_return;
+	Collect {$a,$b};
+  };
+} List;
+#+
+-------------------------------------------------------------------------------
+Returns:
+List - #a list with all found xml values, {{"Node1", "Value1"},{"Node2", "Value2"},...}#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: xmlWrite (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Write a list of {"Name", "Value"} to a xml file. 
+If the File is already present the data gets manipulated or appended
+.#
+Example:
+(Boolean) xmlWrite: xmlWrite("fileName.xml", {{"Node1", "Value1"},{"Node2", "Value2"},...});
+-------------------------------------------------------------------------------
+#-
+String $xml_file; #.Specify the xml file name.#
+List $xml_data #.Specify the data to be written to xml.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.Xml", "xmlWrite", {$xml_file, $xml_data});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Boolean - #.False if an error occured else True.#
+-------------------------------------------------------------------------------
+#-
+
+###############################################################################
+Defun: fileExists? (
+#+
+DesignLogic=yes
+-------------------------------------------------------------------------------
+Description:
+#.
+Check if a file exists
+.#
+Example:
+(Boolean) check: fileExists?("c:\fileName.dat");
+-------------------------------------------------------------------------------
+#-
+String $file #.Specify the file name with path.#
+)
+@{
+  java_exec("de.conti.tires.kite.common.Xml", "fileExists", {$file});
+} Boolean;
+#+
+-------------------------------------------------------------------------------
+Returns:
+Boolean - #.True if file exists.#
+-------------------------------------------------------------------------------
+#-
+

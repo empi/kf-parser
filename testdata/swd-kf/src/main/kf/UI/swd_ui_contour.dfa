@@ -1,0 +1,261 @@
+#! NX/KF 4.0
+
+DefClass: swd_ui_contour (%ui_comp %com_ui_actions);
+
+################################################################################
+#																		Parameters
+################################################################################
+
+
+
+(String Modifiable Parameter) 	cdf_link_file_name: 			"<Select CDF file>";
+(Boolean Modifiable Parameter) 	use_contour:							true;
+(Boolean Modifiable Parameter) 	tilt_text?:								false;
+
+
+(String Modifiable Canonical)		cdf_file_name:						"";
+(Boolean Modifiable)						first_time_open:					true;
+
+(Number Modifiable Parameter)   DS1_value:								0;
+(Number Modifiable Parameter)   DS2_value:								0;
+
+################################################################################
+#																		KF UI
+################################################################################
+
+#title of ui
+(string) title:     "SWD Import Contour (" + version: + ")";
+
+#dialog items for ui
+(list) DialogItems: { TitleImage:, SelectEntryModeList:, SelectCDF:,  TiltTextToggle:, DS1DS2ExpressionGroup:};
+
+
+(Child) TitleImage: {
+  Class, %ui_comp_label;
+	title, "";
+	icon, "swd_contour_import";
+};
+
+  
+# CDF File Selection
+(Child) SelectCDF: {
+  Class, %ui_comp_button;
+  title, cdf_link_file_name:;
+  cue, "Select a CDF File to get the Tire Parameters from.";
+  icon, "fileopen";
+  label, "";
+  ToolTipTitle, False;
+  Tooltip, "";
+	Visibility,   use_contour:;
+};
+
+(Child) SelectEntryModeList: {
+  Class, %ui_comp_enum;
+  title, "Select DS1 and DS2 entry mode";
+  value, if use_contour: then 0 else 1;	
+  PresentationStyle, 0;
+  TitleVisibility, true;
+  BorderVisibility, true;
+  RadioOrientation, 0;
+  Titles, {"from CDF", "manually"};
+  Icons, {};
+};
+
+(Child) DS1DS2ExpressionGroup: {
+  Class, %ui_comp_group;
+	title, "sidewall boundaries",
+  members, { DS1Entry:, DS2Entry: };
+  Column, 0;
+  Group, true;
+	Visibility,  ! use_contour:;
+};
+
+(Child) DS1Entry: {
+  Class, %ui_comp_expression;
+	title, "DS1",
+	name, "DS1_UI",
+  value, 0;
+  Units, "mm";
+	Sensitivity, ! use_contour:;
+};
+
+
+(Child) DS2Entry: {
+  Class, %ui_comp_expression;
+	title, "DS2",
+	name, "DS2_UI",
+  value, 0;
+  Units, "mm";
+	Sensitivity, ! use_contour:;
+};
+
+(Child) TiltTextToggle: {
+  Class, %ui_comp_toggle;
+	title, "Tilt Text on contour",
+  value, tilt_text?:;
+	Sensitivity,  use_contour:;
+};
+
+
+
+#-----------------------------------
+# actions group
+#-----------------------------------
+
+#+
+  
+  Comes from %tpd_ui_actions
+
+#-
+	
+#Update Mechanism for UI blocks (Action Listeners)
+(Method integer ) Update:(Instance $instance)
+@{
+	debug_printValues({$instance});
+		if ($instance = SelectCDF: ) 
+		then
+		@{
+			update_select_cdf:();
+		} else
+		if ($instance = SelectEntryModeList: ) 
+		then
+		@{
+			StoreValue( SelectEntryModeList:Value: != 1 , self:  , use_contour );			
+			update_select_entry_mode:();
+		}
+    else 
+		if ($instance = DS1Entry: ) 
+		then
+		@{
+			StoreValue(DS1Entry:Value: , self:, DS1_value);
+		}
+	  else
+  	if ($instance = DS2Entry: ) 
+		then
+		@{
+			StoreValue(DS2Entry:Value: , self:, DS2_value);
+		}else
+  	if ($instance = TiltTextToggle: ) 
+		then
+		@{
+			StoreValue(TiltTextToggle:Value: , self:, tilt_text?);
+		}
+    else 
+    @{
+         ActionUpdate:($instance);
+    };
+	#writeStatus("Done.");
+	0;
+};
+
+#+
+#-
+
+################################################################################
+#																		GEOMETRY
+################################################################################
+
+# create all expressions if not already available
+
+
+
+#########################################################################################
+# Misc methods
+#########################################################################################
+
+(Method Integer) update_select_cdf:()
+@{
+	# this is original code by B Voelker extracted to its own method
+	
+	#writeStatus("Loading CDF...");
+			
+			# get CDF file name
+			$cdf_name << openPartUI("load", true);
+			
+			if (first($cdf_name) != "" ) then
+			@{
+			# open CDF file
+          if ug_isUGManagerActive() 
+          then 
+              @{
+								$full_name << "@DB/" + first($cdf_name) + "/" + second($cdf_name);
+															
+								if first_time_open: then
+									@{ 
+										StoreValue(false, self:, first_time_open);
+										$open << ug_openPart($full_name);
+										if ($open != 0) then @{
+												ug_printMessage({"Load Failure", "Connot load part file! Please check if you have all access rights as well as the right NX version!"});
+												ug_error("Load Failure", "Connot load part file! Please check if you have all access rights as well as the right NX version!");
+											} else 0;
+									}
+									else SWDGeomContour:Contour:relink:($full_name, "file_rev", second($cdf_name));
+								
+									StoreValue(false, self:, first_time_open);
+									StoreValue(first($cdf_name) , self:  , cdf_file_name );								
+									StoreValue(second($cdf_name) , self:  , file_rev );	
+									$short_name << first($cdf_name) + "/" + second($cdf_name);
+									
+									%ui_comp_setCacheValue(self(), $short_name , SelectCDF: , title );
+
+								StoreValue($short_name , self:  , cdf_link_file_name );
+								refMethod( self(), "get_cdf_attributes:", {$full_name} );
+								0;							
+							}
+          else
+              @{                               
+								$full_name << second($cdf_name) + "\" + first($cdf_name);
+								if first_time_open: then
+									@{ 										
+										StoreValue(false, self:, first_time_open);
+									}
+								else SWDGeomContour:Contour:relink:($full_name, "file_rev", second($cdf_name));
+								
+								StoreValue($full_name , self:  , cdf_file_name );								
+								$short_name << subString(first($cdf_name), 1, length(first($cdf_name))-4);		
+                %ui_comp_setCacheValue(self(), $short_name , SelectCDF: , title );
+								StoreValue($short_name , self:  , cdf_link_file_name );
+								refMethod( self(), "get_cdf_attributes:", {$full_name} );															
+				        0;			
+							};
+						} else 0;
+						0;
+};
+(Method Integer) update_select_entry_mode:()
+@{
+
+	
+	$manual_entry? <<  SelectEntryModeList:Value: = 1;
+  %ui_comp_setCacheValue(self(), $manual_entry? , DS1Entry:, Sensitivity );
+
+  %ui_comp_setCacheValue(self(), $manual_entry? , DS2Entry:, Sensitivity );
+  %ui_comp_setCacheValue(self(), $manual_entry? , DS1DS2ExpressionGroup:, Visibility);				
+
+  %ui_comp_setCacheValue(self(), ! $manual_entry? , SelectCDF: , Sensitivity);				
+  %ui_comp_setCacheValue(self(), ! $manual_entry? , SelectCDF: , Visibility);	
+
+
+  %ui_comp_setCacheValue(self(), ! $manual_entry? , TiltTextToggle: , Sensitivity);				
+  %ui_comp_setCacheValue(self(), ! $manual_entry? , TiltTextToggle: , Visibility);
+	debug_printValues({"update_select_entry_mode", "TiltTextToggle:Value:", TiltTextToggle:Value:});
+	#+
+	#-
+	0;
+};
+
+
+
+(Method integer) OnInitialize:(Instance $instance)
+@{
+   if($instance = SelectEntryModeList: |$instance = DS1Entry: |$instance = DS2Entry:) then update_select_entry_mode:() else 
+	 0;
+};
+
+
+
+(string ) on_apply: 
+@{
+	if(use_contour: & ! fileExists?(cdf_file_name:) ) then "please select an existing CDF file" else
+	"";
+};
+

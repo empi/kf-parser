@@ -1,0 +1,588 @@
+#! NX/KF 4.0
+
+DefClass: %swd_ui_font (swd_geom_font %ui_comp %com_ui_actions);
+
+# parameters that get passed to geometry
+# see swd_geom_font for a description of these
+(Point Parameter Modifiable) 	root_origin: Point(0,0,0);
+(Boolean Modifiable) 					did_init: false;
+
+# dialog items for ui
+
+# main layer
+(list) DialogItems: { TitleImage:,  AdoptCurvesGroup:,
+                     TypoOptionsGroup:, ImportGroup:, ExportGroup:, ActionGroup:};
+
+(Child) TitleImage: {
+  Class, %ui_comp_label;
+	icon, "swd_font_editor";
+	title, "SWD Font Editor";
+};
+
+# toggles KF ownership of curves inside the glyph cages
+(Child) AdoptCurvesGroup: {
+  Class, %ui_comp_group;
+	title, "Adopt Curves";
+  members, { AdoptCurvesToggle: };
+  Column, 0;
+	expanded, true,
+  Group, true;
+};
+
+(Child) AdoptCurvesToggle: {
+  Class, %ui_comp_toggle;
+	Title, "Adopt Curves?",
+	Cue, "Should all curves be adopted? You won't be able to modify them as long as they're adopted.",
+  value, do_adopt_curves?:;
+};
+
+# typography options, width and spacing editing etc.
+(Child) TypoOptionsGroup: {
+  Class, %ui_comp_group;
+	title, "Type Layout Options";
+  members, {   EditSpacingTableGroup:, EditWidthTableGroup:};
+  Column, 0;
+  Expanded,    false;
+  Group, true;
+};
+
+
+## begin spacings editing
+(Child) EditSpacingTableGroup: {
+  Class, %ui_comp_group;
+	title, "Edit Spacing Table";
+  members, { SelectSpacingTable:,  LineSpacing:, SpacingCharacterLeft:, SpacingCharacterRight:,
+            SpacingValue:, };
+  Column, 0;
+  Expanded,    false;
+  Group, true;
+};
+
+(Child) SelectSpacingTable: {
+  Class, %ui_comp_enum;
+	title, "Spacing Table:",
+  value, 0; 
+  PresentationStyle, 0;
+  TitleVisibility, true;
+  BorderVisibility, true;
+  RadioOrientation, 0;
+  Titles, availableSpacingTablesNames:();
+};
+
+
+(Child) LineSpacing: {
+  Class, %ui_comp_double;
+  value, getLineSpacing:( getSpacingTableIndex:( SelectSpacingTable:Value: ) );
+	Title, "leading / line spacing:",
+  unit, "";
+  MaximumValue, 1.0e19;
+  MinimumValue, -1.0e19;
+  Width, 0;
+  VisibleDecimals, 4;
+};
+
+
+(Child) SpacingCharacterLeft: {
+  Class, %ui_comp_enum;
+	title, "Left hand character:",
+  value, 0; 
+  PresentationStyle, 0;
+  TitleVisibility, true;
+  BorderVisibility, true;
+  RadioOrientation, 0;
+  Titles, character_map:;
+};
+
+
+(Child) SpacingCharacterRight: {
+  Class, %ui_comp_enum;
+	title, "Right hand character:",
+  value, 0; 
+  PresentationStyle, 0;
+  TitleVisibility, true;
+  BorderVisibility, true;
+  RadioOrientation, 0;
+  Titles, character_map:;
+};
+
+(Child) SpacingValue: {
+  Class, %ui_comp_double;
+  title, "Spacing Value:";
+  value, 0;
+  unit, "mm";
+  MaximumValue, 1.0e19;
+  MinimumValue, -1.0e19;
+  Width, 0;
+  VisibleDecimals, 4;
+};
+## end spacings editing
+
+## begin width editing
+(Child) EditWidthTableGroup: {
+  Class, %ui_comp_group;
+	title, "Edit Width Table";
+  members, { WidthCharacter:, WidthValue: };
+  Column, 0;
+  Expanded,    false;
+  Group, true;
+};
+
+(Child) WidthCharacter: {
+  Class, %ui_comp_enum;
+	title, "Character to edit:",
+  value, 0; 
+  PresentationStyle, 0;
+  TitleVisibility, true;
+  BorderVisibility, true;
+  RadioOrientation, 0;
+  Titles, character_map:;
+};
+
+
+(Child) WidthValue: {
+  Class, %ui_comp_double;
+  title, "Width:";
+  value, 0;
+  unit, "mm";
+  MaximumValue, 1.0e19;
+  MinimumValue, -1.0e19;
+  Width, 0;
+  VisibleDecimals, 4;
+};
+## end width editing
+## end editing section
+
+# import of spacings and width from excel
+(Child) ImportGroup: {
+  Class, %ui_comp_group;
+	title, "Import";
+  members, {  ImportSpacingTableGroup:, ImportWidthGroup: };
+  Column, 0;
+  Expanded,    false;
+  Group, true;
+};
+
+## begin spacing import
+(Child) ImportSpacingTableGroup: {
+  Class, %ui_comp_group;
+	title, "Import  Spacing Table";
+  members, {  SelectSpacingImportFile:, EnterSpacingTableName:, EnterSpacingExcelSheetIndex:, StartExcelSpacingImport: };
+  Column, 0;
+  Expanded,    false;
+  Group, true;
+};
+
+
+(Child) SelectSpacingImportFile: {
+  Class, %ui_comp_select_file;
+	title, "Select excel file to import",
+  value, "";
+  InitialDir, getenv("KITE_HOME");
+  FileFilter, "xls";
+  FileMode, 0;
+};
+
+(Child) EnterSpacingExcelSheetIndex: {
+  Class, %ui_comp_integer;
+	title, "Worksheet index:",
+  value, 1;
+  MaximumValue, 2^30;
+  MinimumValue, 1;
+  Width, 0;
+};
+
+
+(Child) EnterSpacingTableName: {
+  Class, %ui_comp_string;
+	title, "new Spacing Table name:",
+  value, "";
+  PresentationStyle, 0;
+  MaxTextLength, 0;
+  ReadOnlyString, false;
+  ListItems, {};
+};
+
+
+(Child) StartExcelSpacingImport: {
+  Class, %ui_comp_button;
+	title, "Import Spacing Table from Excel",
+  ToolTipTitle, False;
+  Tooltip, "Import a spacing table from an excel file.";
+};
+## end  spacing import
+
+## begin import of width
+(Child) ImportWidthGroup: {
+  Class, %ui_comp_group;
+	title, "Import Width Table";
+  members, {  SelectWidthImportFile:,EnterWidthExcelSheetIndex:, StartWidthImport: };
+  Column, 0;
+  Expanded,    false;
+  Group, true;
+};
+
+(Child) SelectWidthImportFile: {
+  Class, %ui_comp_select_file;
+	title, "Select excel file to import",
+  value, "";
+  InitialDir, getenv("KITE_HOME");
+  FileFilter, "xls";
+  FileMode, 0;
+};
+
+(Child) EnterWidthExcelSheetIndex: {
+  Class, %ui_comp_integer;
+	title, "Worksheet index:",
+  value, 1;
+  MaximumValue, 2^30;
+  MinimumValue, 1;
+  Width, 0;
+};
+
+(Child) StartWidthImport: {
+  Class, %ui_comp_button;
+	title, "Import Widths Table from Excel",
+  ToolTipTitle, False;
+  Tooltip, "Import the widths table from an Excel file.";
+};
+## end import of width
+
+## Export Stuff
+(Child) ExportGroup: {
+  Class, %ui_comp_group;
+	Title, "Export",
+  members, { ExportSpacingGroup:, ExportWidthGroup: };
+  Column, 0;
+  Group, true;
+	Expanded, False;
+};
+
+
+## begin export of spacings
+(Child) ExportSpacingGroup: {
+  Class, %ui_comp_group;
+	Title, "Export Spacing",
+  members, { SelectSpacingExportFile:, SelectExportSpacingTable:, StartSpacingExportButton: };
+  Column, 0;
+  Group, true;
+	Expanded, False;
+};
+
+
+(Child) SelectSpacingExportFile: {
+  Class, %ui_comp_select_file;
+	title, "Select Excel file",
+  value, "";
+  InitialDir, getenv("KITE_HOME");
+  FileFilter, "xls";
+  FileMode, 1;
+};
+
+(Child) SelectExportSpacingTable: {
+  Class, %ui_comp_enum;
+	title, "Spacing Table:",
+  value, 0; 
+  PresentationStyle, 0;
+  TitleVisibility, true;
+  BorderVisibility, true;
+  RadioOrientation, 0;
+  Titles, availableSpacingTablesNames:();
+};
+
+(Child) StartSpacingExportButton: {
+  Class, %ui_comp_button;
+	title, "Export Spacing Table to Excel",
+  ToolTipTitle, False;
+  Tooltip, "Export a spacing table to an Excel file.";
+};
+## end export of spacings
+
+## begin export of width
+(Child) ExportWidthGroup: {
+  Class, %ui_comp_group;
+	Title, "Export Widths",
+  members, {SelectWidthExportFile:, StartWidthExportButton:  };
+  Column, 0;
+  Group, true;
+	Expanded, False;
+};
+
+(Child) SelectWidthExportFile: {
+  Class, %ui_comp_select_file;
+	title, "Select Excel file",
+  value, "";
+  InitialDir, getenv("KITE_HOME");
+  FileFilter, "xls";
+  FileMode, 1;
+};
+
+(Child) StartWidthExportButton: {
+  Class, %ui_comp_button;
+	title, "Export Widths Table to Excel",
+  ToolTipTitle, False;
+  Tooltip, "Export the widths table to an Excel file.";
+};
+## end export of width
+
+
+
+## end of UI elements
+
+#Update Mechanism for UI blocks (Action Listeners)
+(Method integer ) Update:(Instance $instance)
+@{		
+	debug_printValues({"in update for instance ", $instance});
+	if ($instance = AdoptCurvesToggle: ) then
+  @{
+      StoreValue(AdoptCurvesToggle:Value:, self:, do_adopt_curves? );								
+  } 
+	else if($instance = StartExcelSpacingImport:) then
+  @{ # user has pressed the start excel import button
+      if(spacingTableNameOk:()) then @{
+        if(excelFileOk:() ) then @{
+          if(true) then @{
+            $new_data << importSpacingFromExcelSheet:(SelectSpacingImportFile:Value:, EnterSpacingExcelSheetIndex:Value:,EnterSpacingTableName:Value:);
+						if(Empty?($new_data)) then ug_printMessage("Could not import file " + SelectSpacingImportFile:Value:) else updateUI:();
+						0;
+          } else 1;
+        }
+        else 1; # something is wrong, message is displayed in individual checking methods
+      }
+      else 1; # something is wrong, message is displayed in individual checking methods
+  }	
+	else if ($instance = WidthValue: ) then
+  @{
+		storeWidth:();
+		updateUI:();					
+  }  
+  else if ($instance = WidthCharacter: ) then
+  @{
+		updateWidthUI:();
+  }
+	else	if ($instance = SpacingCharacterLeft: ) then
+  @{		
+		updateSpacingValuesUI:();					
+		0;
+  } 
+	else	if ($instance = SpacingCharacterRight: ) then
+  @{   
+		updateSpacingValuesUI:();					
+		0;
+  } 
+	else	if ($instance = SpacingValue: ) then
+  @{
+		triggerStoreSpacingValue:();
+		0;
+  } 
+	else	if ($instance = StartWidthImport: ) then
+  @{
+		$new_data << importWidthFromExcelSheet:(SelectWidthImportFile:Value:, EnterWidthExcelSheetIndex:Value:);
+    if(Empty?($new_data)) then ug_printMessage("Could not import width from file " + SelectWidthImportFile:Value:) else updateUI:();
+    0;
+  } 
+	else	if ($instance = StartSpacingExportButton: ) then
+  @{
+		startSpacingExport:();	
+    0;
+  } 
+	else	if ($instance = StartWidthExportButton: ) then
+  @{
+		startWidthExport:();	
+    0;
+  } 
+  else if ($instance = SelectSpacingTable: ) then
+  @{
+		updateSpacingValuesUI:();	
+		updateLineSpacingUI:();
+  } 
+  else if ($instance = LineSpacing: ) then
+  @{
+		storeLineSpacing:();
+		updateLineSpacingUI:();
+  }    
+	else
+  @{
+    ActionUpdate:($instance);
+  };	 
+	debug_printValues({"end update for instance ", $instance});
+};
+
+
+# NX 6 specific
+(string) on_ok: on_apply: ;
+
+
+# this is evaluated if you hit apply
+(string) on_apply: 
+@{
+	# check for incomplete data here,
+	# return a non-empty string to avoid user progressing beyond this point
+	# i.e. only return an empty string if data is complete
+	 "";
+};
+
+(boolean method) spacingTableNameOk:()
+@{
+	$given_names << loop {
+		for $descr in spacing_table_descriptions:;
+		collect first($descr);
+	};
+  # name not ok if empty or 
+  # already taken 
+  $is_empty? << com_stringEqual(EnterSpacingTableName:Value:,  "");
+  $is_already_taken? << member( EnterSpacingTableName:Value: ,$given_names, "key", Identity, "test", com_stringEqual );
+  if($is_empty?) then ug_printMessage({"Spacing Table name is  empty. Please fill.", EnterSpacingTableName:Value:}) else{};
+  if($is_already_taken?) then ug_printMessage({"Spacing Table name is alreay in use. Please choose a different one."}) else {}; 
+  if($is_empty? | $is_already_taken?) 
+  then false
+	else true;	
+};
+
+(boolean method) excelFileOk:()
+@{
+	$exists_and_readable? << Access( SelectSpacingImportFile:Value:, Read); # see if the file exists and is readable
+	if(! $exists_and_readable?) then ug_printMessage({"File " +SelectSpacingImportFile:Value:, "doesn't exist or can't be opened"," due to permissions." }) else 0;
+	$exists_and_readable?;
+};
+
+(Any method) updateUI:()
+@{
+  %ui_comp_setCacheValue(self(),  availableSpacingTablesNames:(), SelectSpacingTable:, 				Titles );
+  %ui_comp_setCacheValue(self(),  availableSpacingTablesNames:(), SelectExportSpacingTable:, 	Titles );
+	updateSpacingValuesUI:();
+	updateLineSpacingUI:();
+	updateWidthUI:();
+};
+
+(Any method) updateSpacingValuesUI:()
+@{
+	 $value << getSpacingValue:();
+	 %ui_comp_setCacheValue(self(),  $value , SpacingValue:, Value );
+};					
+
+# selectedUIValue is the value of the select-spacing-table-ui
+(Integer method) getSpacingTableIndex:(Integer $selected_UI_Value)
+@{
+	# transform from zero-based indices (UI) to one-based 
+	$selected_table << $selected_UI_Value + 1;
+	$spacing_table_indices << loop {
+		for $descr in spacing_table_descriptions:;
+		collect second($descr);
+	};
+  $return_val << if($selected_table > length($spacing_table_indices ) | empty?($spacing_table_indices)) then -1 else   nth($selected_table, $spacing_table_indices);
+	$return_val;
+};
+
+(Integer Method) getLineSpacing:(Integer $spacing_table_index)
+@{
+	if(length(spacing_tables:) < $spacing_table_index | Empty?( spacing_tables: )) then@{
+		debug_printValues({"no spacing_tables:"});
+		0;
+	  }  
+	else @{
+		$value << second(nth($spacing_table_index, spacing_tables:));
+		$value;
+	};
+};
+
+
+(Any Method)	updateLineSpacingUI:()
+@{
+  %ui_comp_setCacheValue(self(),  getLineSpacing:( getSpacingTableIndex:( SelectSpacingTable:Value: ) ),
+                          LineSpacing:, Value );
+};
+
+
+(Any Method)	updateWidthUI:()
+@{
+ 	$width_index << WidthCharacter:Value: +1; # UI is zero-based, everything else isn't.
+	if($width_index > length(width_table:)) then debug_printValues({"width index too large"}) else 
+  %ui_comp_setCacheValue(self(),  nth($width_index, width_table:),
+                          WidthValue:, Value );
+};
+
+
+(Any Method) storeWidth:()
+@{
+	$new_width << WidthValue:Value:;
+	$width_index << WidthCharacter:Value: +1; # UI is zero-based, everything else isn't.
+	$new_width_table << loop {
+		for $index from 1 to length(width_table:);
+		collect if($index = $width_index) then $new_width else nth($index, width_table:);
+	};
+  StoreValue($new_width_table, self:, width_table );
+	updateWidthUI:();
+};
+
+(Number Method) getSpacingValue:()
+@{
+	$selected_table << SelectSpacingTable:value:;
+  $spacing_table_index << getSpacingTableIndex:($selected_table);
+  $left_hand_character << SpacingCharacterLeft:Value: + 1;
+  $right_hand_character << SpacingCharacterRight:Value: + 1;
+	$spacing_factor << 1; # at this point, we are interested in the real, actual value that is in the spacing table.
+	$spacing << swd_getSpacingsForIndices(spacing_tables:, {$left_hand_character, $right_hand_character}, $spacing_factor, "spacing_table_index", $spacing_table_index);	
+	if(empty?($spacing)) then 0 else @{
+    $spacing_value << first($spacing);
+    $spacing_value;
+	};
+};
+
+(Any Method) startSpacingExport:()
+@{
+	$selected_file << SelectSpacingExportFile:Value:;
+	$table_index << getSpacingTableIndex:(SelectExportSpacingTable:Value:); 
+	if("" = $selected_file) then ug_printMessage("Please select a file to export to") 
+	else if(length(spacing_tables:) < $table_index ) then ug_printMessage("spacing table not found.") else
+	writeSpacingTableToExcel:($selected_file,$table_index);
+};	
+
+(Any Method) startWidthExport:()
+@{
+	$selected_file << SelectWidthExportFile:Value:;
+	$table_index << getSpacingTableIndex:(SelectExportSpacingTable:Value:); 	
+	if("" = $selected_file) then ug_printMessage("Please select a file to export to") 
+	else writeWidthTableToExcel:($selected_file);
+};	
+
+(Any Method) 		triggerStoreSpacingValue:()
+@{
+	$selected_table << SelectSpacingTable:value:;
+  $spacing_table_index << getSpacingTableIndex:($selected_table);
+  $left_hand_character << SpacingCharacterLeft:Value: + 1; 			# UI counts from 0, KF from 1
+  $right_hand_character << SpacingCharacterRight:Value: + 1;
+	$spacing_value << SpacingValue:Value:;
+	storeSpacingValue:($spacing_table_index,$left_hand_character,$right_hand_character, $spacing_value);
+	0;
+};
+
+(Any Method) storeLineSpacing:()
+@{
+  $spacing_index << getSpacingTableIndex:(	SelectSpacingTable:Value:);
+	if($spacing_index <= length(spacing_tables:)) then @{		
+		$new_tables << loop {
+			for $i from 1 to length(spacing_tables: );
+			collect if($spacing_index = $i) then @{
+				$old_table << nth($i, spacing_tables:);
+				{first($old_table), # collect original spacing values
+					LineSpacing:Value: # combine with new line spacing value
+				};
+      } else nth($i, spacing_tables:); # not the table that we want to replace, so grab it unaltered
+		};
+    StoreValue($new_tables, self:, spacing_tables );
+		updateLineSpacingUI:();
+	} else @{
+		debug_printValues({"index ", $spacing_index , " too large"});
+	};
+};
+
+( instance ) defaultFocus: 
+@{
+	if(! did_init: ) then @{
+    StoreValue(true, self:, did_init );		
+    %ui_comp_setCacheValue(self(),  do_adopt_curves?:, AdoptCurvesToggle:, Value );		
+	} else 0; 
+	updateUI:();
+	AdoptCurvesToggle;
+};
+

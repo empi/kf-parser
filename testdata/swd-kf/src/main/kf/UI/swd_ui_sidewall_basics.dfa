@@ -1,0 +1,4 @@
+#! NX/KF 4.0
+
+DefClass: %swd_ui_sidewall_basics (%ui_comp);
+
